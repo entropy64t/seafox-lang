@@ -91,6 +91,7 @@ static void concatArray() {
         double a = AS_NUMBER(pop()); \
         push(valueType(a op b)); \
     } while (false)
+#define READ_STRING() AS_STRING(READ_CONSTANT())
 
 static bool add() {
     Value av = peek(1);
@@ -257,6 +258,25 @@ static InterpretResult run() {
             case OP_PRINT:
                 printValue(pop(), "\n");
                 break;
+            case OP_POP:
+                pop();
+                break;
+            case OP_DEFINE_GLOBAL: {
+                ObjString* name = READ_STRING();
+                tableSet(&vm.globals, name, peek(0));
+                pop();
+                break;
+            }
+            case OP_GET_GLOBAL: {
+                ObjString* name = READ_STRING();
+                Value var;
+                if (!tableGet(&vm.globals, name, &var)) {
+                    runtimeError("Undefined variable: '%s'.", name->chars);
+                    return INTERPRET_RUNTIME_ERROR;
+                }
+                push(var);
+                break;
+            }
             default:
                 return INTERPRET_RUNTIME_ERROR;
         }
@@ -266,16 +286,19 @@ static InterpretResult run() {
 #undef READ_CONSTANT
 #undef READ_CONSTANT_LONG
 #undef BINARY_OP
+#undef READ_STRING
 }
 
 void initVM() {
     resetStack();
     vm.objects = NULL;
     initTable(&vm.strings);
+    initTable(&vm.globals);
 }
 
 void freeVM() {
     freeTable(&vm.strings);
+    freeTable(&vm.globals);
     freeObjects();
 }
 

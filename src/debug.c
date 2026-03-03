@@ -8,6 +8,7 @@ static int simpleInstruction(const char* name, int offset) {
     return offset + 1;
 }
 
+// operand size in bytes
 static int constantInstruction(const char* name, Chunk* chunk, int offset, int operandSize) {
     byte constant[operandSize];
     int index = 0;
@@ -80,6 +81,12 @@ int disassembleInstruction(Chunk* chunk, int offset) {
             return simpleInstruction("INDEX_ACCESS", offset);
         case OP_PRINT:
             return simpleInstruction("PRINT", offset);
+        case OP_POP:
+            return simpleInstruction("POP", offset);
+        case OP_DEFINE_GLOBAL:
+            return constantInstruction("GLOBAL_DEFINE", chunk, offset, 1);
+        case OP_GET_GLOBAL:
+            return constantInstruction("GLOBAL_GET", chunk, offset, 1);
         default:
             printf("Unknown opcode %d\n", instruction);
             return offset + 1;

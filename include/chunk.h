@@ -5,6 +5,7 @@
 
 // constant: 1 byte
 // long constant: 3 bytes
+// TODO : reorder for readability
 typedef enum Opcode
 {
     OP_RETURN,
@@ -25,6 +26,9 @@ typedef enum Opcode
     OP_ARRAY, 
     OP_INDEX_ACCESS,
     OP_PRINT,
+    OP_POP,
+    OP_DEFINE_GLOBAL,
+    OP_GET_GLOBAL,
 } Opcode;
 
 typedef struct Chunk

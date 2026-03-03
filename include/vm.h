@@ -23,6 +23,7 @@ typedef struct VM
     Object* objects;
 
     HashTable strings;
+    HashTable globals;
 } VM;
 
 extern VM vm;

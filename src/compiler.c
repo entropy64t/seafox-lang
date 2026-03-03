@@ -141,7 +141,7 @@ static bool match(TokenType type) {
 }
 
 // emit a constant
-static void emitConstant(Value value) {
+static int emitConstant(Value value) {
     Opcode opcode = OP_CONSTANT_8;
     int constant = addConstant(currentChunk(), value);
     if (constant > BYTE_MAX) {
@@ -153,6 +153,7 @@ static void emitConstant(Value value) {
     }
 
     emit2(opcode, (byte)constant);
+    return constant;
 }
 
 static void emitArray(int length) {
@@ -169,6 +170,48 @@ static void endCompiler() {
         disassembleChunk(currentChunk(), "code");
     }
 #endif
+}
+
+static void synchronize() {
+    parser.panicMode = false;
+
+    while (parser.current.type != TOKEN_EOF) {
+        if (parser.previous.type == TOKEN_SEMICOLON) return;
+        switch (parser.current.type) {
+        case TOKEN_CLASS:
+        case TOKEN_FUNC:
+        case TOKEN_VAR:
+        case TOKEN_FOR:
+        case TOKEN_IF:
+        case TOKEN_WHILE:
+        case TOKEN_PRINT:
+        case TOKEN_RETURN:
+            return;
+
+        default:
+            ; // Do nothing.
+        }
+
+        advance();
+    }
+}
+
+static byte identifierConstant(Token* name) {
+    return emitConstant(OBJ_VAL(copyString(name->start, name->length)));
+}   
+
+static byte parseVariable(const char* errorMessage) {
+    consume(TOKEN_IDENTIFIER, errorMessage);
+    return identifierConstant(&parser.previous);
+}
+
+static void defineVariable(byte global) {
+    emit2(OP_DEFINE_GLOBAL, global);
+}
+
+static void namedVar(Token name) {
+    byte arg = identifierConstant(&name);
+    emit2(OP_GET_GLOBAL, arg);
 }
 
 static void expression();
@@ -319,10 +362,37 @@ static void indexAccess() {
     debugUnlog();
 }
 
+static void variable() {
+    namedVar(parser.previous);
+}
+
 static void printStatement() {
+    debugLog("print()");
     expression();
     consume(TOKEN_SEMICOLON, "Expected ';' after expression");
     emit(OP_PRINT);
+    debugUnlog();
+}
+
+static void exprStatement() {
+    debugLog("exprStatement()");
+    expression();
+    consume(TOKEN_SEMICOLON, "Expected ';' after expression");
+    emit(OP_POP);
+    debugUnlog();
+}
+
+static void varDeclaration() {
+    byte global = parseVariable("Expected variable name.");
+
+    if (match(TOKEN_EQUAL)) {
+        expression();
+    } else {
+        emit(OP_NULL);
+    }
+    consume(TOKEN_SEMICOLON, "Expected ';' after variable declaration.");
+
+    defineVariable(global);
 }
 
 // pratt table : BEGIN
@@ -354,7 +424,7 @@ ParseRule rules[] = {
     [TOKEN_SLASH_EQUAL]   = { NULL,     NULL,   NULL,        PREC_NONE       },
     [TOKEN_LEFT_BRACKET]  = { NULL,     NULL,   indexAccess, PREC_CALL       },
     [TOKEN_RIGHT_BRACKET] = { NULL,     NULL,   NULL,        PREC_NONE       },
-    [TOKEN_IDENTIFIER]    = { NULL,     NULL,   NULL,        PREC_NONE       },
+    [TOKEN_IDENTIFIER]    = { variable, NULL,   NULL,        PREC_NONE       },
     [TOKEN_STRING]        = { string,   NULL,   NULL,        PREC_NONE       },
     [TOKEN_NUMBER]        = { number,   NULL,   NULL,        PREC_NONE       },
     [TOKEN_AND]           = { NULL,     NULL,   NULL,        PREC_NONE       },
@@ -422,10 +492,21 @@ static void statement() {
     if (match(TOKEN_PRINT)) {
         printStatement();
     }
+    else {
+        exprStatement();
+    }
 }
 
 static void declaration() {
-    statement();
+    if (match(TOKEN_VAR)) {
+        varDeclaration();
+    }
+    else {
+        statement();
+    }
+
+    if (parser.panicMode)
+        synchronize();
 }
 
 // compile source code into bytecode
