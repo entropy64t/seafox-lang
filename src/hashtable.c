@@ -21,7 +21,7 @@ static Entry* findEntry(Entry* entries, int capacity, ObjString* key) {
             if (IS_NULL(entry->value)) {
                 return (tombstone != NULL ? tombstone : entry);
             }
-            else if (tombstone != NULL) {
+            else if (tombstone == NULL) {
                 // new tombstone
                 tombstone = entry;
             }

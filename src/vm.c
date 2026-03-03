@@ -59,6 +59,21 @@ static void concatenate() {
     push(OBJ_VAL(result));
 }
 
+static void concatArray() {
+    ObjArray* b = AS_ARRAY(pop());
+    ObjArray* a = AS_ARRAY(pop());
+
+    int length = a->length + b->length;
+    Value* items = ALLOCATE(Value, length);
+
+    memcpy(items, a->items, a->length * sizeof(Value));
+
+    memcpy(items + a->length, b->items, b->length * sizeof(Value));
+
+    ObjArray* result = takeArray(items, length);
+    push(OBJ_VAL(result));
+}
+
 #define READ_BYTE() (*vm.ip++)
 #define READ_CONSTANT() (vm.chunk->constants.values[READ_BYTE()])
 #define READ_CONSTANT_LONG() (vm.chunk->constants.values[((int)READ_BYTE() << 16) + ((int)READ_BYTE() << 8) + (int)READ_BYTE()])
@@ -91,11 +106,19 @@ static bool add() {
         push(NUMBER_VAL(a + b));
         return true; // success
     }
-    else if (IS_STRING(av)) {
+    else if (IS_ARRAY(av) && IS_ARRAY(bv)) {
+        concatArray();
+        return true;
+    }
+    else if (IS_STRING(av))
+    {
         runtimeError("Expected string as right operand, got %T.", &bv); // peek(1) is not string
     }
     else if (IS_NUMBER(av)) {
         runtimeError("Expected number as right operand, got %T.", &bv);
+    }
+    else if (IS_ARRAY(av)) {
+        runtimeError("Expected array as right operand, got %T", &bv);
     }
     else {
         runtimeError("Expected string or number as left operand, got %T.", &av);

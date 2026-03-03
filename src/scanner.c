@@ -207,8 +207,6 @@ void initScanner(const char* source) {
 }
 
 /// Get the next token.
-///
-/// (performance matters)
 /// @return 
 Token scan() {
 #define MAKE_MATCHING(expected, matches, other) makeToken(match(expected) ? (matches) : (other))
