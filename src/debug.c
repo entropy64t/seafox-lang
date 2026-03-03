@@ -78,6 +78,8 @@ int disassembleInstruction(Chunk* chunk, int offset) {
             return simpleInstruction("ARRAY", offset);
         case OP_INDEX_ACCESS:
             return simpleInstruction("INDEX_ACCESS", offset);
+        case OP_PRINT:
+            return simpleInstruction("PRINT", offset);
         default:
             printf("Unknown opcode %d\n", instruction);
             return offset + 1;

@@ -5,6 +5,7 @@
 #include "object.h"
 #include "value.h"
 #include "vm.h"
+#include "hashtable.h"
 
 static Object* allocateObject(size_t size, ObjectType type) {
     Object* object = (Object*)reallocate(NULL, 0, size);
@@ -18,10 +19,23 @@ static Object* allocateObject(size_t size, ObjectType type) {
 
 #define ALLOCATE_OBJ(type, objectType) (type*)allocateObject(sizeof(type), objectType)
 
-static ObjString* allocateString(char* chars, int length) {
+static uint32_t hashString(const char* key, int length) {
+    uint32_t hash = 2166136261u; // 1st magic prime
+    for (int i = 0; i < length; i++) {
+        hash ^= (uint8_t)key[i];
+        hash *= 16777619; // second magic prime
+    }
+    return hash;
+}
+
+static ObjString* allocateString(char* chars, int length, uint32_t hash) {
     ObjString* string = ALLOCATE_OBJ(ObjString, OBJ_STRING);
     string->length = length;
     string->chars = chars;
+    string->hash = hash;
+
+    tableSet(&vm.strings, string, NULL_VAL); // treat the hash table like a hash set
+
     return string;
 }
 
@@ -33,14 +47,29 @@ static ObjArray* allocateArray(Value* items, int length) {
 }
 
 ObjString* copyString(char* chars, int length) {
-    char* heapChars = ALLOCATE(char, length + 1);
+    uint32_t hash = hashString(chars, length);
+
+    ObjString *interned = tableFindString(&vm.strings, chars, length, hash);
+
+    if (interned != NULL)
+        return interned;
+
+    char *heapChars = ALLOCATE(char, length + 1);
     memcpy(heapChars, chars, length);
     heapChars[length] = '\0';
-    return allocateString(heapChars, length);
+    return allocateString(heapChars, length, hash);
 }
 
 ObjString* takeString(char* chars, int length) {
-    return allocateString(chars, length);
+    uint32_t hash = hashString(chars, length);
+
+    ObjString* interned = tableFindString(&vm.strings, chars, length, hash);
+    if (interned != NULL) {
+        FREE_ARRAY(char, chars, length + 1);
+        return interned;
+    }
+
+    return allocateString(chars, length, hash);
 }
 
 ObjArray* copyArray(Value* items, int length) {

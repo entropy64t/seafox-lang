@@ -129,6 +129,17 @@ static void emitN(size_t n, ...) {
     va_end(args);  // Cleanup
 }
 
+static bool check(TokenType type) {
+    return type == parser.current.type;
+}
+
+static bool match(TokenType type) {
+    if (!check(type))
+        return false;
+    advance();
+    return true;
+}
+
 // emit a constant
 static void emitConstant(Value value) {
     Opcode opcode = OP_CONSTANT_8;
@@ -163,6 +174,8 @@ static void endCompiler() {
 static void expression();
 static ParseRule* getRule(TokenType type);
 static void parse(Precedence precedence);
+static void statement();
+static void declaration();
 
 // parse a number literal
 static void number() {
@@ -306,6 +319,12 @@ static void indexAccess() {
     debugUnlog();
 }
 
+static void printStatement() {
+    expression();
+    consume(TOKEN_SEMICOLON, "Expected ';' after expression");
+    emit(OP_PRINT);
+}
+
 // pratt table : BEGIN
 ParseRule rules[] = {
     [TOKEN_LEFT_PAREN]    = { grouping, NULL,   NULL,        PREC_NONE       },
@@ -399,6 +418,16 @@ static void expression() {
     parse(PREC_ASSIGNMENT);
 }
 
+static void statement() {
+    if (match(TOKEN_PRINT)) {
+        printStatement();
+    }
+}
+
+static void declaration() {
+    statement();
+}
+
 // compile source code into bytecode
 bool compile(const char* source, Chunk* chunk) {
     initScanner(source);
@@ -409,11 +438,15 @@ bool compile(const char* source, Chunk* chunk) {
     compilingChunk = chunk;
 
     advance();
+
+    while (!match(TOKEN_EOF)) {
+        declaration();
+    }
     //while (parser.current.type != TOKEN_EOF) {
-    expression();
+    //expression();
     //}
 
-    consume(TOKEN_EOF, "Expected end of expression");
+    consume(TOKEN_EOF, "Expected end of program");
 
     endCompiler();
 

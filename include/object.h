@@ -21,6 +21,7 @@ struct ObjString
     Object object;
     int length;
     char* chars;
+    uint32_t hash;
 };
 
 struct ObjArray

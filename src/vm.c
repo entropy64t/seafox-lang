@@ -10,6 +10,7 @@
 #include "runtime_error.h"
 #include "object.h"
 #include "fox_memory.h"
+#include "hashtable.h"
 
 VM vm;
 
@@ -179,7 +180,7 @@ static InterpretResult run() {
 
         switch (instruction = READ_BYTE()) {
             case OP_RETURN:
-                printValue(pop(), "\n");
+                //printValue(pop(), "\n");
                 return INTERPRET_OK;
             case OP_CONSTANT_8:
                 constant = READ_CONSTANT();
@@ -230,6 +231,9 @@ static InterpretResult run() {
                 if (!indexAccess())
                     return INTERPRET_RUNTIME_ERROR;
                 break;
+            case OP_PRINT:
+                printValue(pop(), "\n");
+                break;
             default:
                 return INTERPRET_RUNTIME_ERROR;
         }
@@ -244,9 +248,11 @@ static InterpretResult run() {
 void initVM() {
     resetStack();
     vm.objects = NULL;
+    initTable(&vm.strings);
 }
 
 void freeVM() {
+    freeTable(&vm.strings);
     freeObjects();
 }
 

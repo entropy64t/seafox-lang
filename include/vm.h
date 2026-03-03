@@ -2,6 +2,7 @@
 
 #include "chunk.h"
 #include "value.h"
+#include "hashtable.h"
 
 #define STACK_MAX 256
 
@@ -20,6 +21,8 @@ typedef struct VM
     Value stack[STACK_MAX];
     Value* stackTop;
     Object* objects;
+
+    HashTable strings;
 } VM;
 
 extern VM vm;

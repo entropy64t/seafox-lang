@@ -24,6 +24,7 @@ typedef enum Opcode
     OP_LESS,
     OP_ARRAY, 
     OP_INDEX_ACCESS,
+    OP_PRINT,
 } Opcode;
 
 typedef struct Chunk

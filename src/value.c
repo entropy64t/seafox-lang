@@ -54,9 +54,10 @@ static bool objectsEqual(Object* a, Object* b) {
     switch (a->type)
     {
         case OBJ_STRING: {
-            ObjString* aString = a;
-            ObjString* bString = b;
-            return aString->length == bString->length && memcmp(aString->chars, bString->chars, aString->length) == 0;
+            return a == b; // pointer equality, because strings are interned
+            //ObjString *aString = a;
+            //ObjString* bString = b;
+            //return aString->length == bString->length && memcmp(aString->chars, bString->chars, aString->length) == 0;
         }
         case OBJ_ARRAY: {
             ObjArray* aArr = a;
