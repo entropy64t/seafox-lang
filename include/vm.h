@@ -12,18 +12,21 @@ typedef enum InterpretResult
     INTERPRET_RUNTIME_ERROR
 } InterpretResult;
 
-typedef struct VMachine
+typedef struct VM
 {
     Chunk* chunk;
     byte* ip;
 
     Value stack[STACK_MAX];
     Value* stackTop;
-} VMachine;
+    Object* objects;
+} VM;
+
+extern VM vm;
 
 void initVM();
 void freeVM();
-InterpretResult interpret(const char* source);
+InterpretResult interpret(const char *source);
 
 void push(Value v);
 Value pop();

@@ -1,7 +1,8 @@
 #pragma once
 
-typedef enum
+typedef enum TokenType
 {
+// token type : BEGIN
     // Single-character tokens.
     TOKEN_LEFT_PAREN, TOKEN_RIGHT_PAREN,
     TOKEN_LEFT_BRACE, TOKEN_RIGHT_BRACE,
@@ -38,6 +39,7 @@ typedef enum
 
     // error and eof
     TOKEN_ERROR, TOKEN_EOF
+// token type : END
 } TokenType;
 
 /*

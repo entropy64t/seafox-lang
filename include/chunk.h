@@ -15,6 +15,15 @@ typedef enum Opcode
     OP_SUBTRACT,
     OP_MULTIPLY,
     OP_DIVIDE,
+    OP_NULL,
+    OP_TRUE,
+    OP_FALSE,
+    OP_NOT,
+    OP_EQUAL,
+    OP_GREATER,
+    OP_LESS,
+    OP_ARRAY, 
+    OP_INDEX_ACCESS,
 } Opcode;
 
 typedef struct Chunk

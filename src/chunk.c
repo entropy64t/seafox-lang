@@ -1,7 +1,7 @@
 #include <stdlib.h>
 
 #include "chunk.h"
-#include "memory.h"
+#include "fox_memory.h"
 
 void initChunk(Chunk* chunk) {
     chunk->capacity = 0;
@@ -21,7 +21,7 @@ void writeChunk(Chunk* chunk, byte b, int line) {
         chunk->capacity = GROW_CAPACITY(oldCap);
         chunk->code = GROW_ARRAY(byte, chunk->code, oldCap, chunk->capacity);
     }
-    if (line > chunk->lineCapacity) {
+    if (line >= chunk->lineCapacity) {
         int oldCap = chunk->lineCapacity;
         chunk->lineCapacity = GROW_CAPACITY(oldCap);
         chunk->lineCounts = GROW_ARRAY(int, chunk->lineCounts, oldCap, chunk->lineCapacity);

@@ -19,7 +19,7 @@ static int constantInstruction(const char* name, Chunk* chunk, int offset, int o
     }
 
     printf("%-16s %4d '", name, index);
-    printValue(chunk->constants.values[index]);
+    printValue(chunk->constants.values[index], "");
     printf("'\n");
     return offset + 1 + operandSize;
 }
@@ -47,11 +47,19 @@ int disassembleInstruction(Chunk* chunk, int offset) {
         case OP_RETURN:
             return simpleInstruction("RETURN", offset);
         case OP_CONSTANT_8:
-            return constantInstruction("CONSTANT", chunk, offset, 1);
+            return constantInstruction("CONSTANT_8", chunk, offset, 1);
         case OP_CONSTANT_24:
-            return constantInstruction("CONSTANT_LONG", chunk, offset, 3);
+            return constantInstruction("CONSTANT_24", chunk, offset, 3);
+        case OP_TRUE:
+            return simpleInstruction("TRUE", offset);
+        case OP_FALSE:
+            return simpleInstruction("FALSE", offset);
+        case OP_NULL:
+            return simpleInstruction("NULL", offset);
         case OP_NEGATE:
             return simpleInstruction("NEGATE", offset);
+        case OP_NOT:
+            return simpleInstruction("NOT", offset);
         case OP_ADD:
             return simpleInstruction("ADD", offset);
         case OP_SUBTRACT:
@@ -60,9 +68,41 @@ int disassembleInstruction(Chunk* chunk, int offset) {
             return simpleInstruction("MULTIPLY", offset);
         case OP_DIVIDE:
             return simpleInstruction("DIVIDE", offset);
+            case OP_EQUAL:
+            return simpleInstruction("EQUAL", offset);
+        case OP_GREATER:
+            return simpleInstruction("GREATER", offset);
+        case OP_LESS:
+            return simpleInstruction("LESS", offset);
+        case OP_ARRAY:
+            return simpleInstruction("ARRAY", offset);
+        case OP_INDEX_ACCESS:
+            return simpleInstruction("INDEX_ACCESS", offset);
         default:
             printf("Unknown opcode %d\n", instruction);
             return offset + 1;
     }
 }
 
+int loglevel = 0;
+void debugLog(const char *str) {
+#ifdef DEBUG_PRINT_CODE
+    print(str);
+    loglevel++;
+#endif
+}
+
+void print(const char* str) {
+#ifdef DEBUG_PRINT_CODE
+    for (int i = 0; i < loglevel; i++)
+        printf("  ");
+    printf(str);
+    printf("\n");
+#endif
+}
+
+void debugUnlog() {
+#ifdef DEBUG_PRINT_CODE
+    loglevel--;
+#endif
+}

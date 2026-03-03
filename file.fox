@@ -1,22 +1,2 @@
-()+-*/
-+=
--=
-*=
-/=
-<==>==!=
-! !!!!!
-// a single line comment
-/*
-to get ignored
-*/
+{ "boo", { "moo", { 5, 6, 7 }, 8 }, 9 }[1][0][4 - 8 * 0.5] + "16" + "string" == "m16string"
 
-/**/ shu shu shu
-babaaaaaa_boo001
-1.11111111
-10
-for
-func
-break
-while
-class
-property
