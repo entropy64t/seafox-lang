@@ -77,7 +77,7 @@ int disassembleInstruction(Chunk* chunk, int offset) {
             return simpleInstruction("LESS", offset);
         case OP_ARRAY:
             return simpleInstruction("ARRAY", offset);
-        case OP_INDEX_ACCESS:
+        case OP_INDEX_GET:
             return simpleInstruction("INDEX_ACCESS", offset);
         case OP_PRINT:
             return simpleInstruction("PRINT", offset);
@@ -87,6 +87,8 @@ int disassembleInstruction(Chunk* chunk, int offset) {
             return constantInstruction("GLOBAL_DEFINE", chunk, offset, 1);
         case OP_GET_GLOBAL:
             return constantInstruction("GLOBAL_GET", chunk, offset, 1);
+        case OP_SET_GLOBAL:
+            return constantInstruction("GLOBAL_SET", chunk, offset, 1);
         default:
             printf("Unknown opcode %d\n", instruction);
             return offset + 1;

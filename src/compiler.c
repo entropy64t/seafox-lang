@@ -12,7 +12,7 @@
 #include "debug.h"
 #endif
 
-typedef void (*ParseFn)();
+typedef void (*ParseFn)(bool canAssign);
 
 typedef struct Parser
 {
@@ -209,26 +209,34 @@ static void defineVariable(byte global) {
     emit2(OP_DEFINE_GLOBAL, global);
 }
 
-static void namedVar(Token name) {
-    byte arg = identifierConstant(&name);
-    emit2(OP_GET_GLOBAL, arg);
-}
-
 static void expression();
 static ParseRule* getRule(TokenType type);
 static void parse(Precedence precedence);
 static void statement();
 static void declaration();
 
+static void namedVar(Token name, bool canAssign) {
+    byte arg = identifierConstant(&name);
+    
+    if (canAssign && match(TOKEN_EQUAL)) {
+        expression();
+        emit2(OP_SET_GLOBAL, arg);
+    }
+    else {
+        emit2(OP_GET_GLOBAL, arg);
+    }
+}
+
+
 // parse a number literal
-static void number() {
+static void number(bool canAssign) {
     debugLog("number()");
     double value = strtod(parser.previous.start, NULL);
     emitConstant(NUMBER_VAL(value));
     debugUnlog();
 }
 
-static void string() {
+static void string(bool canAssign) {
     debugLog("string()");
     char *chars = parser.previous.start + 1;
     int length = parser.previous.length - 2;
@@ -250,7 +258,7 @@ static void string() {
     debugUnlog();
 }
 
-static void array() {
+static void array(bool canAssign) {
     debugLog("array()");
     int length = 0;
     while (parser.current.type != TOKEN_RIGHT_BRACE) {
@@ -268,7 +276,7 @@ static void array() {
 }
 
 // parse a literal
-static void literal() {
+static void literal(bool canAssign) {
     debugLog("literal()");
     switch (parser.previous.type) {
         case TOKEN_TRUE:
@@ -287,7 +295,7 @@ static void literal() {
 }
 
 // parse a parenthesized expression
-static void grouping() {
+static void grouping(bool canAssign) {
     debugLog("grouping()");
     expression();
     consume(TOKEN_RIGHT_PAREN, "Expected ')' after grouping.");
@@ -295,7 +303,7 @@ static void grouping() {
 }
 
 // parse unary expression (-a, !a, a++, a--)
-static void unary() {
+static void unary(bool canAssign) {
     debugLog("unary()");
     TokenType operatorType = parser.previous.type;
 
@@ -320,7 +328,7 @@ static void unary() {
 }
 
 // parse binary expression (a + b, a - b, etc.)
-static void binary() {
+static void binary(bool canAssign) {
     debugLog("binary()");
     TokenType operatorType = parser.previous.type;
     ParseRule* rule = getRule(operatorType);
@@ -354,16 +362,23 @@ static void binary() {
     debugUnlog();
 }
 
-static void indexAccess() {
+static void indexAccess(bool canAssign) {
     debugLog("indexAccess()");
     expression(); // eval index
     consume(TOKEN_RIGHT_BRACKET, "Expected ']' after expression.");
-    emit(OP_INDEX_ACCESS);
+
+    if (canAssign && match(TOKEN_EQUAL)) {
+        expression();
+        emit(OP_INDEX_SET);
+    }
+    else {
+        emit(OP_INDEX_GET);
+    }
     debugUnlog();
 }
 
-static void variable() {
-    namedVar(parser.previous);
+static void variable(bool canAssign) {
+    namedVar(parser.previous, canAssign);
 }
 
 static void printStatement() {
@@ -468,7 +483,8 @@ static void parse(Precedence precedence) {
         return;
     }
 
-    prefixRule();
+    bool canAssign = precedence <= PREC_ASSIGNMENT;
+    prefixRule(canAssign);
 
     while (precedence <= getRule(parser.current.type)->precedence) {
         advance();
@@ -476,10 +492,14 @@ static void parse(Precedence precedence) {
         ParseRule* rule = getRule(parser.previous.type);
 
         if (rule->infix != NULL) {
-            rule->infix();
+            rule->infix(canAssign);
         } else if (rule->postfix != NULL) {
-            rule->postfix();
+            rule->postfix(canAssign);
         }
+    }
+
+    if (canAssign && match(TOKEN_EQUAL)) {
+        error("Invalid assignment target.");
     }
 }
 

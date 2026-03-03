@@ -24,11 +24,13 @@ typedef enum Opcode
     OP_GREATER,
     OP_LESS,
     OP_ARRAY, 
-    OP_INDEX_ACCESS,
+    OP_INDEX_GET,
+    OP_INDEX_SET,
     OP_PRINT,
     OP_POP,
     OP_DEFINE_GLOBAL,
     OP_GET_GLOBAL,
+    OP_SET_GLOBAL,
 } Opcode;
 
 typedef struct Chunk

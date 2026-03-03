@@ -20,3 +20,14 @@ print nam;
 var list = { 1, 2, 3, 4 };
 print list;
 print list[3];
+
+a = 9;
+print a;
+
+print list;
+list[0] = 19;
+print list;
+//2 * a = 77;
+
+list = { 5, 6, 7 };
+print list;

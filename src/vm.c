@@ -142,7 +142,7 @@ static bool array() {
 
 static bool indexString(ObjString* string, int index) {
     if (index < 0 || index >= string->length) {
-        runtimeError("Index must be in range [0, %i), is %i", string->length, index);
+        runtimeError("Index must be in range [0, %d), is %d", string->length, index);
         return false;
     }
     char* single = &string->chars[index];
@@ -152,7 +152,7 @@ static bool indexString(ObjString* string, int index) {
 
 static bool indexArray(ObjArray* arr, int index) {
     if (index < 0 || index >= arr->length) {
-        runtimeError("Index must be in range [0, %i), is %i", arr->length, index);
+        runtimeError("Index must be in range [0, %d), is %d", arr->length, index);
         return false;
     }
     Value single = arr->items[index];
@@ -160,7 +160,7 @@ static bool indexArray(ObjArray* arr, int index) {
     return true;
 }
 
-static bool indexAccess() {
+static bool indexGet() {
     Value index = pop();
     if (!IS_NUMBER(index)) {
         runtimeError("Expresion must be a number, not %T", &index);
@@ -189,6 +189,31 @@ static bool indexAccess() {
             runtimeError("Can only index arrays or strings, not %T", &array);
             return false;
     }
+    return true;
+}
+
+static bool indexSet() {
+    Value target = pop();
+    if (!IS_NUMBER(peek(0))) {
+        runtimeError("Array indices must be numbers");
+        return false;
+    }
+    if (!IS_ARRAY(peek(1))) {
+        runtimeError("Can only assign to array indices");
+        return false;
+    }
+    double d = AS_NUMBER(pop());
+    int index = d;
+    if (d != index) {
+        runtimeError("Array indices must be integers");
+        return false;
+    }
+    ObjArray *array = AS_ARRAY(pop());
+    if (index >= array->length) {
+        runtimeError("Out of array range. Index: %d, length: %d", index, array->length);
+        return false;
+    }
+    array->items[index] = target;
     return true;
 }
 
@@ -251,8 +276,12 @@ static InterpretResult run() {
                 if (!array())
                     return INTERPRET_RUNTIME_ERROR;
                 break;
-            case OP_INDEX_ACCESS:
-                if (!indexAccess())
+            case OP_INDEX_GET:
+                if (!indexGet())
+                    return INTERPRET_RUNTIME_ERROR;
+                break;
+            case OP_INDEX_SET: 
+                if (!indexSet())
                     return INTERPRET_RUNTIME_ERROR;
                 break;
             case OP_PRINT:
@@ -275,6 +304,15 @@ static InterpretResult run() {
                     return INTERPRET_RUNTIME_ERROR;
                 }
                 push(var);
+                break;
+            }
+            case OP_SET_GLOBAL: {
+                ObjString* name = READ_STRING();
+                if (tableSet(&vm.globals, name, peek(0))) {
+                    tableDelete(&vm.globals, name);
+                    runtimeError("Undefined variable: '%s'.", name->chars);
+                    return INTERPRET_RUNTIME_ERROR;
+                }
                 break;
             }
             default:
