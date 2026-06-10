@@ -62,7 +62,8 @@ def main():
     add_tokens("greater", "less", "greater_equal", "less_equal", precedence="comparison")
     add_token("string", prefix="string", infix="NULL", precedence="none")
     add_token("left_brace", prefix="array")
-    add_token("left_bracket", postfix="indexAccess", prefix="NULL") # precedence ?
+    add_token("left_bracket", infix="indexAccess", prefix="NULL") # precedence ?
+    add_token("identifier", prefix="variable", infix="NULL")
     
     lines = []
     lines.append("ParseRule rules[] = {\n")

@@ -108,7 +108,7 @@ def main():
         "and", "class", "else", "false",
         "for", "func", "if", "null", "or",
         "print", "return", "super", "this",
-        "true", "var", "while",
+        "true", "var", "while", "const"
         # impl added later
         "void", "static", "elif", "break", "continue", "using", "property"
     ]

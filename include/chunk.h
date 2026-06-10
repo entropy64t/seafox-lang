@@ -8,41 +8,53 @@
 // TODO : reorder for readability
 typedef enum Opcode
 {
-    OP_RETURN,
-    OP_CONSTANT_8,
-    OP_CONSTANT_24,
-    OP_NEGATE,
-    OP_ADD,
-    OP_SUBTRACT,
-    OP_MULTIPLY,
-    OP_DIVIDE,
-    OP_NULL,
-    OP_TRUE,
-    OP_FALSE,
-    OP_NOT,
-    OP_EQUAL,
-    OP_GREATER,
-    OP_LESS,
-    OP_ARRAY, 
-    OP_INDEX_GET,
-    OP_INDEX_SET,
-    OP_PRINT,
-    OP_POP,
-    OP_DEFINE_GLOBAL,
-    OP_GET_GLOBAL,
-    OP_SET_GLOBAL,
+	OP_RETURN,
+
+	OP_CONSTANT_8,
+	OP_CONSTANT_24,
+
+	OP_NEGATE,
+
+	OP_ADD,
+	OP_SUBTRACT,
+	OP_MULTIPLY,
+	OP_DIVIDE,
+
+	OP_NULL,
+	OP_TRUE,
+	OP_FALSE,
+
+	OP_NOT,
+	OP_EQUAL,
+	OP_GREATER,
+	OP_LESS,
+
+	OP_ARRAY,
+	OP_INDEX_GET,
+	OP_INDEX_SET,
+
+	OP_PRINT,
+
+	OP_POP,
+
+	OP_DEFINE_GLOBAL,
+	OP_GET_GLOBAL,
+	OP_SET_GLOBAL,
+
+	OP_GET_LOCAL,
+	OP_SET_LOCAL,
 } Opcode;
 
 typedef struct Chunk
 {
-    byte* code;
+	byte* code;
 
-    int* lineCounts;
-    int lineCapacity;
+	int* lineCounts;
+	int lineCapacity;
 
-    int count;
-    int capacity;
-    ValueArray constants;
+	int count;
+	int capacity;
+	ValueArray constants;
 } Chunk;
 
 void initChunk(Chunk* chunk);

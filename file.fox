@@ -16,6 +16,8 @@ print a;
 
 var nam = "jupi zmienne";
 print nam;
+nam = "baku";
+print nam;
 
 var list = { 1, 2, 3, 4 };
 print list;
@@ -31,3 +33,58 @@ print list;
 
 list = { 5, 6, 7 };
 print list;
+
+//a++;
+//a++;
+//a--;
+//print "a is now: ";
+//print a;
+
+print "separator";
+
+{
+    var loc = "local";
+    print loc;
+
+    {
+        var loc = "more local";
+        print loc;
+    }
+    print loc;
+}
+
+const a = 7;
+print "this is a const: ";
+print a;
+
+// a = 9; error: cant assign to a constant
+print "afterr";
+print a;
+
+print "+= etc test";
+var inc = 9;
+print inc;
+inc += 3;
+// inc = inc + 3
+// general: NAME OP= VAL => NAME = NAME OP VAL
+print inc;
+inc++;
+print inc;
+inc *= 2;
+print inc;
+inc--;
+print inc;
+inc /= 4;
+print inc;
+
+var test = 6;
+print test;
+var t2 = (test = test + 1);
+print test;
+print t2;
+t2 = test++;
+
+print test;
+print t2;
+
+print test = 4;
