@@ -43,6 +43,11 @@ typedef enum Opcode
 
 	OP_GET_LOCAL,
 	OP_SET_LOCAL,
+
+	OP_JUMP,
+	OP_LOOP,
+	OP_JUMP_IF_TRUE,
+	OP_JUMP_IF_FALSE,
 } Opcode;
 
 typedef struct Chunk
@@ -60,6 +65,8 @@ typedef struct Chunk
 void initChunk(Chunk* chunk);
 void writeChunk(Chunk* chunk, byte b, int line);
 void freeChunk(Chunk* chunk);
+void appendChunk(Chunk* main, Chunk* toAdd);
 int addConstant(Chunk* chunk, Value constant);
 int writeConstant(Chunk* chunk, Value constant, int line);
 int getLine(Chunk* chunk, int index);
+bool writeChunkToFile(Chunk* chunk, const char* path);

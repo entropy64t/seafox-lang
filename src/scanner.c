@@ -140,8 +140,9 @@ static Token string() {
 }
 
 static Token number() {
-	while (isDigit(peek()))
+	while (isDigit(peek())) {
 		advance();
+	}
 
 	if (peek() == '.' && isDigit(peekNext())) {
 		advance(); // past the dot

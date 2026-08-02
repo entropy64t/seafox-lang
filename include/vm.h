@@ -8,29 +8,29 @@
 
 typedef enum InterpretResult
 {
-    INTERPRET_OK,
-    INTERPRET_COMPILE_ERROR,
-    INTERPRET_RUNTIME_ERROR
+	INTERPRET_OK,
+	INTERPRET_COMPILE_ERROR,
+	INTERPRET_RUNTIME_ERROR
 } InterpretResult;
 
 typedef struct VM
 {
-    Chunk* chunk;
-    byte* ip;
+	Chunk* chunk;
+	byte* ip;
 
-    Value stack[STACK_MAX];
-    Value* stackTop;
-    Object* objects;
+	Value stack[STACK_MAX];
+	Value* stackTop;
+	Object* objects;
 
-    HashTable strings;
-    HashTable globals;
+	HashTable strings;
+	HashTable globals;
 } VM;
 
 extern VM vm;
 
 void initVM();
 void freeVM();
-InterpretResult interpret(const char *source);
+InterpretResult interpret(const char* source, char* bytecodePath, const char* traceFile);
 
 void push(Value v);
 Value pop();

@@ -88,3 +88,29 @@ print test;
 print t2;
 
 print test = 4;
+
+
+print "IF / ELSE TEST";
+var iftest = 5;
+if (iftest < 3) print iftest;
+else {
+    print "if and else work";
+    print iftest;
+}
+
+var X = (true and null or { "arr", 1, false, null }) or false;
+print X;
+var Y = 11;
+if (Y > 5 and true and (Y < -1 or Y < 90)) print "yes";
+
+
+var i = 0;
+while (i < 10) {
+    // print i;
+    i++;
+}
+print "done";
+
+for (var i = 1; i <= 10; i *= 2) {
+    print i;
+}

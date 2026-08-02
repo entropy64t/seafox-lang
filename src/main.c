@@ -7,115 +7,113 @@
 #include "debug.h"
 #include "vm.h"
 
+#define USAGE "Usage:\n"                                                       \
+			  "    seafox\n"                                                   \
+			  "        Start the REPL.\n"                                      \
+			  "\n"                                                             \
+			  "    seafox <file.fox>\n"                                        \
+			  "        Compile and run a Seafox source file.\n"                \
+			  "\n"                                                             \
+			  "    seafox <file.fox> [-o <bytecode-path>] [-c <trace-path>]\n" \
+			  "        Compile and run the source file.\n"                     \
+			  "        Optionally save bytecode and/or disassembly."
+
+static void usage() {
+	fprintf(stderr, USAGE);
+	exit(64);
+}
+
 static void repl() {
-    char line[1024];
-    for (;;) {
-        printf("> ");
+	char line[1024];
+	for (;;) {
+		printf("> ");
 
-        if (!fgets(line, sizeof(line), stdin)) {
-            printf("\n");
-            break;
-        }
+		if (!fgets(line, sizeof(line), stdin)) {
+			printf("\n");
+			break;
+		}
 
-        interpret(line);
-    }
+		interpret(line, NULL, NULL);
+	}
 }
 
 static char* readFile(const char* path) {
-    FILE* file = fopen(path, "rb");
-    if (file == NULL) {
-        fprintf(stderr, "Could not open file \"%s\".\n", path);
-        exit(74);
-    }
+	FILE* file = fopen(path, "rb");
+	if (file == NULL) {
+		fprintf(stderr, "Could not open file \"%s\".\n", path);
+		exit(74);
+	}
 
-    fseek(file, 0L, SEEK_END);
-    size_t fileSize = ftell(file);
-    rewind(file);
+	fseek(file, 0L, SEEK_END);
+	size_t fileSize = ftell(file);
+	rewind(file);
 
-    char* buffer = (char*)malloc(fileSize + 1);
-    if (buffer == NULL) {
-        fprintf(stderr, "Not enough memory to read \"%s\".\n", path);
-        exit(74);
-    }
+	char* buffer = (char*) malloc(fileSize + 1);
+	if (buffer == NULL) {
+		fprintf(stderr, "Not enough memory to read \"%s\".\n", path);
+		exit(74);
+	}
 
-    size_t bytesRead = fread(buffer, sizeof(char), fileSize, file);
-    if (bytesRead < fileSize) {
-        fprintf(stderr, "Could not read file \"%s\".\n", path);
-        exit(74);
-    }
+	size_t bytesRead = fread(buffer, sizeof(char), fileSize, file);
+	if (bytesRead < fileSize) {
+		fprintf(stderr, "Could not read file \"%s\".\n", path);
+		exit(74);
+	}
 
-    buffer[bytesRead] = '\0';
+	buffer[bytesRead] = '\0';
 
-    fclose(file);
-    return buffer;
+	fclose(file);
+	return buffer;
 }
 
-static void runFile(const char* path) {
-    char* source = readFile(path);
-    InterpretResult result = interpret(source);
-    free(source); 
+static void runFile(const char* path, const char* bytecodeDump, const char* traceDump) {
+	char* source = readFile(path);
+	InterpretResult result = interpret(source, bytecodeDump, traceDump);
+	free(source);
 
-    if (result == INTERPRET_COMPILE_ERROR)
-        exit(65);
-    if (result == INTERPRET_RUNTIME_ERROR)
-        exit(70);
+	if (result == INTERPRET_COMPILE_ERROR)
+		exit(65);
+	if (result == INTERPRET_RUNTIME_ERROR)
+		exit(70);
 }
 
-int main(int argc, const char* argv[]) {
-    initVM();
+int parseArgs(int argc, const char** argv) {
+	if (argc == 1) {
+		repl();
+		return 0;
+	}
 
-    if (argc == 1) {
-        repl();
-    }
-    else if (argc == 2) {
-        runFile(argv[1]);
-    }
-    else if (argc == 3) {
-        // compile into bytecode and print to a file, then run. TODO
-    }
-    else {
-        fprintf(stderr, "Usage: seafox [path]");
-        exit(64);
-    }
+	const char* source = NULL;
+	const char* outBytecode = NULL;
+	const char* outTrace = NULL;
 
-    freeVM();
-    /*
-    Chunk chunk;
-    initChunk(&chunk);
+	source = argv[1];
 
-    int constant = addConstant(&chunk, 1.2);
-    writeChunk(&chunk, OP_CONSTANT, 1);
-    writeChunk(&chunk, constant, 1);
+	for (int i = 2; i < argc; i++) {
+		if (strcmp(argv[i], "-o") == 0) {
+			if (++i >= argc)
+				usage();
+			outBytecode = argv[i];
+		}
+		else if (strcmp(argv[i], "-c") == 0) {
+			if (++i >= argc)
+				usage();
+			outTrace = argv[i];
+		}
+		else {
+			usage();
+		}
+	}
 
-    // writeChunk(&chunk, OP_RETURN, 1);
+	runFile(source, outBytecode, outTrace);
+}
 
-   // for (int i = 0; i < 1000; i++) {
-   //     addConstant(&chunk, 1);
-   // }
-//disassembleChunk(&chunk, "a");
-    for (int line = 2; line < 10; line++) {
-        writeConstant(&chunk, line * 2, line);
-    }
-    //disassembleChunk(&chunk, "a");
-    writeChunk(&chunk, OP_NEGATE, 10);
-    writeChunk(&chunk, OP_ADD, 11);
-    writeChunk(&chunk, OP_RETURN, 12);
+int main(int argc, const char** argv) {
+	initVM();
 
-    // disassembleChunk(&chunk, "test chunk");
-    writeConstant(&chunk, 1.2, 1);
-    writeConstant(&chunk, 3.4, 2);
+	parseArgs(argc, argv);
 
-    writeChunk(&chunk, OP_ADD, 3);
+	freeVM();
 
-    writeConstant(&chunk, 5.6, 4);
-
-    writeChunk(&chunk, OP_DIVIDE, 5);
-
-    interpret(&chunk);
-
-    freeChunk(&chunk);
-
-    freeVM();*/
-
-    return 0;
+	return 0;
 }

@@ -3,111 +3,162 @@
 #include "debug.h"
 #include "value.h"
 
-static int simpleInstruction(const char* name, int offset) {
-	printf("%s\n", name);
+static int simpleInstruction(FILE* out, const char* name, int offset) {
+	fprintf(out, "%s\n", name);
 	return offset + 1;
 }
 
-static int byteInstruction(const char* name, Chunk* chunk, int offset) {
+static int byteInstruction(FILE* out, const char* name, Chunk* chunk, int offset) {
 	uint8_t slot = chunk->code[offset + 1];
-	printf("%-16s %4d\n", name, slot);
+
+	fprintf(out, "%-16s %4u\n", name, slot);
+
 	return offset + 2;
 }
 
-// operand size in bytes
-static int constantInstruction(const char* name, Chunk* chunk, int offset, int operandSize) {
-	byte constant[operandSize];
+static int jumpInstruction(FILE* out, const char* name, int sign, Chunk* chunk, int offset) {
+	uint16_t jump =
+		((uint16_t) chunk->code[offset + 1] << 8) |
+		chunk->code[offset + 2];
+
+	fprintf(out,
+			"%-16s %4d -> %d\n",
+			name,
+			offset,
+			offset + 3 + sign * jump);
+
+	return offset + 3;
+}
+
+static int constantInstruction(FILE* out, const char* name, Chunk* chunk, int offset, int operandSize) {
 	int index = 0;
-	int p = 0;
-	for (int i = operandSize - 1; i >= 0; i--) {
-		constant[i] = chunk->code[offset + i + 1];
-		index += constant[i] << p;
-		p += 8; // shift by 1 byte
+
+	for (int i = 0; i < operandSize; i++) {
+		index <<= 8;
+		index |= chunk->code[offset + 1 + i];
 	}
 
-	printf("%-16s %4d '", name, index);
+	fprintf(out, "%-16s %4d '", name, index);
+
 	printValue(chunk->constants.values[index], "");
-	printf("'\n");
+
+	fprintf(out, "'\n");
+
 	return offset + 1 + operandSize;
 }
 
-void disassembleChunk(Chunk* chunk, const char* name) {
-	printf("=== %s ===\n", name);
-	for (int offset = 0; offset < chunk->count;) {
-		offset = disassembleInstruction(chunk, offset);
-	}
-}
-
-int disassembleInstruction(Chunk* chunk, int offset) {
-	printf("%04d ", offset);
+int disassembleInstruction(FILE* out, Chunk* chunk, int offset) {
+	fprintf(out, "%04d ", offset);
 
 	int line = getLine(chunk, offset);
-	if (offset > 0 && line == getLine(chunk, offset - 1)) {
-		printf("   | ");
+
+	if (offset > 0 &&
+		line == getLine(chunk, offset - 1)) {
+		fprintf(out, "   | ");
 	}
 	else {
-		printf("%4d ", line);
+		fprintf(out, "%4d ", line);
 	}
 
 	byte instruction = chunk->code[offset];
+
 	switch (instruction) {
 		case OP_RETURN:
-			return simpleInstruction("RETURN", offset);
+			return simpleInstruction(out, "RETURN", offset);
+
 		case OP_CONSTANT_8:
-			return constantInstruction("CONSTANT_8", chunk, offset, 1);
+			return constantInstruction(out, "CONSTANT_8", chunk, offset, 1);
+
 		case OP_CONSTANT_24:
-			return constantInstruction("CONSTANT_24", chunk, offset, 3);
+			return constantInstruction(out, "CONSTANT_24", chunk, offset, 3);
+
 		case OP_TRUE:
-			return simpleInstruction("TRUE", offset);
+			return simpleInstruction(out, "TRUE", offset);
+
 		case OP_FALSE:
-			return simpleInstruction("FALSE", offset);
+			return simpleInstruction(out, "FALSE", offset);
 		case OP_NULL:
-			return simpleInstruction("NULL", offset);
+			return simpleInstruction(out, "NULL", offset);
 		case OP_NEGATE:
-			return simpleInstruction("NEGATE", offset);
+			return simpleInstruction(out, "NEGATE", offset);
 		case OP_NOT:
-			return simpleInstruction("NOT", offset);
+			return simpleInstruction(out, "NOT", offset);
 		case OP_ADD:
-			return simpleInstruction("ADD", offset);
+			return simpleInstruction(out, "ADD", offset);
 		case OP_SUBTRACT:
-			return simpleInstruction("SUBTRACT", offset);
+			return simpleInstruction(out, "SUBTRACT", offset);
 		case OP_MULTIPLY:
-			return simpleInstruction("MULTIPLY", offset);
+			return simpleInstruction(out, "MULTIPLY", offset);
 		case OP_DIVIDE:
-			return simpleInstruction("DIVIDE", offset);
+			return simpleInstruction(out, "DIVIDE", offset);
 		case OP_EQUAL:
-			return simpleInstruction("EQUAL", offset);
+			return simpleInstruction(out, "EQUAL", offset);
 		case OP_GREATER:
-			return simpleInstruction("GREATER", offset);
+			return simpleInstruction(out, "GREATER", offset);
 		case OP_LESS:
-			return simpleInstruction("LESS", offset);
+			return simpleInstruction(out, "LESS", offset);
 		case OP_ARRAY:
-			return simpleInstruction("ARRAY", offset);
+			return simpleInstruction(out, "ARRAY", offset);
 		case OP_INDEX_GET:
-			return simpleInstruction("INDEX_ACCESS_GET", offset);
+			return simpleInstruction(out, "INDEX_ACCESS_GET", offset);
 		case OP_INDEX_SET:
-			return simpleInstruction("INDEX_ACCESS_SET", offset);
+			return simpleInstruction(out, "INDEX_ACCESS_SET", offset);
 		case OP_PRINT:
-			return simpleInstruction("PRINT", offset);
+			return simpleInstruction(out, "PRINT", offset);
 		case OP_POP:
-			return simpleInstruction("POP", offset);
+			return simpleInstruction(out, "POP", offset);
 		case OP_DEFINE_GLOBAL:
-			return constantInstruction("GLOBAL_DEFINE", chunk, offset, 1);
+			return constantInstruction(out, "GLOBAL_DEFINE", chunk, offset, 1);
 		case OP_GET_GLOBAL:
-			return constantInstruction("GLOBAL_GET", chunk, offset, 1);
+			return constantInstruction(out, "GLOBAL_GET", chunk, offset, 1);
 		case OP_SET_GLOBAL:
-			return constantInstruction("GLOBAL_SET", chunk, offset, 1);
+			return constantInstruction(out, "GLOBAL_SET", chunk, offset, 1);
 		case OP_GET_LOCAL:
-			return byteInstruction("LOCAL_GET", chunk, offset);
+			return byteInstruction(out, "LOCAL_GET", chunk, offset);
 		case OP_SET_LOCAL:
-			return byteInstruction("LOCAL_SET", chunk, offset);
+			return byteInstruction(out, "LOCAL_SET", chunk, offset);
+		case OP_JUMP:
+			return jumpInstruction(out, "JUMP", 1, chunk, offset);
+		case OP_LOOP:
+			return jumpInstruction(out, "LOOP", -1, chunk, offset);
+		case OP_JUMP_IF_TRUE:
+			return jumpInstruction(out, "JUMP_IF_TRUE", 1, chunk, offset);
+		case OP_JUMP_IF_FALSE:
+			return jumpInstruction(out, "JUMP_IF_FALSE", 1, chunk, offset);
 		default:
-			printf("Unknown opcode %d\n", instruction);
+			fprintf(out, "Unknown opcode %u\n", instruction);
 			return offset + 1;
 	}
 }
 
+static void disassembleChunkInternal(FILE* out, Chunk* chunk, const char* name) {
+	fprintf(out, "=== %s ===\n", name);
+
+	for (int offset = 0; offset < chunk->count;) {
+		offset = disassembleInstruction(out, chunk, offset);
+	}
+}
+
+void disassembleChunk(Chunk* chunk, const char* name) {
+	disassembleChunkInternal(stdout, chunk, name);
+}
+
+bool disassembleChunkToFile(Chunk* chunk, const char* name, const char* path) {
+	FILE* out = fopen(path, "w");
+
+	if (out == NULL) {
+		return false;
+	}
+
+	disassembleChunkInternal(out, chunk, name);
+
+	fclose(out);
+
+	return true;
+}
+
 int loglevel = 0;
+
 void debugLog(const char* str) {
 #ifdef DEBUG_PRINT_CODE
 	print(str);
@@ -117,14 +168,16 @@ void debugLog(const char* str) {
 
 void print(const char* str) {
 #ifdef DEBUG_PRINT_CODE
-	for (int i = 0; i < loglevel; i++)
+	for (int i = 0; i < loglevel; i++) {
 		printf("  ");
-	printf(str);
-	printf("\n");
+	}
+
+	fputs(str, stdout);
+	fputc('\n', stdout);
 #endif
 }
 
-void debugUnlog() {
+void debugUnlog(void) {
 #ifdef DEBUG_PRINT_CODE
 	loglevel--;
 #endif

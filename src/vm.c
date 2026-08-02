@@ -79,8 +79,11 @@ static void concatArray() {
 }
 
 #define READ_BYTE() (*vm.ip++)
+#define READ_UINT16() ((uint16_t) (((uint16_t) READ_BYTE() << 8) | (uint16_t) READ_BYTE()))
+#define READ_UINT24() ((uint32_t) (((uint32_t) READ_UINT16() << 8) | (uint32_t) READ_BYTE()))
+#define READ_UINT32() ((uint32_t) (((uint32_t) READ_UINT24() << 8) | (uint32_t) READ_BYTE()))
 #define READ_CONSTANT() (vm.chunk->constants.values[READ_BYTE()])
-#define READ_CONSTANT_LONG() (vm.chunk->constants.values[((int) READ_BYTE() << 16) + ((int) READ_BYTE() << 8) + (int) READ_BYTE()])
+#define READ_CONSTANT_LONG() (vm.chunk->constants.values[READ_UINT24()])
 #define BINARY_OP(valueType, op)                                                     \
 	do {                                                                             \
 		if (!IS_NUMBER(peek(0)) || !IS_NUMBER(peek(1))) {                            \
@@ -225,7 +228,7 @@ static InterpretResult run() {
 #ifdef DEBUG_TRACE_EXECUTION
 		printf("Stack before:\n");
 		printStack();
-		disassembleInstruction(vm.chunk, (int) (vm.ip - vm.chunk->code));
+		disassembleInstruction(stdout, vm.chunk, (int) (vm.ip - vm.chunk->code));
 #endif
 
 		switch (instruction = READ_BYTE()) {
@@ -350,6 +353,32 @@ static InterpretResult run() {
 					vm.stack[slot] = peek(0);
 					break;
 				}
+			case OP_JUMP_IF_TRUE:
+				{
+					uint16_t jump = READ_UINT16();
+					if (!isFalsey(peek(0)))
+						vm.ip += jump;
+					break;
+				}
+			case OP_JUMP_IF_FALSE:
+				{
+					uint16_t jump = READ_UINT16();
+					if (isFalsey(peek(0)))
+						vm.ip += jump;
+					break;
+				}
+			case OP_JUMP:
+				{
+					uint16_t jump = READ_UINT16();
+					vm.ip += jump;
+					break;
+				}
+			case OP_LOOP:
+				{
+					uint16_t jump = READ_UINT16();
+					vm.ip -= jump;
+					break;
+				}
 
 			default:
 				return INTERPRET_RUNTIME_ERROR;
@@ -357,10 +386,18 @@ static InterpretResult run() {
 	}
 
 #undef READ_BYTE
+#undef READ_UINT16
+#undef READ_UINT24
+#undef READ_UINT32
 #undef READ_CONSTANT
 #undef READ_CONSTANT_LONG
 #undef BINARY_OP
 #undef READ_STRING
+}
+
+static void dumpChunk(Chunk* chunk, char* bytecodePath, char* tracePath) {
+	writeChunkToFile(chunk, bytecodePath);
+	disassembleChunkToFile(chunk, "code", tracePath);
 }
 
 void initVM() {
@@ -376,7 +413,7 @@ void freeVM() {
 	freeObjects();
 }
 
-InterpretResult interpret(const char* source) {
+InterpretResult interpret(const char* source, char* bytecodePath, const char* tracePath) {
 	Chunk chunk;
 	initChunk(&chunk);
 
@@ -384,6 +421,8 @@ InterpretResult interpret(const char* source) {
 		freeChunk(&chunk);
 		return INTERPRET_COMPILE_ERROR;
 	}
+
+	dumpChunk(&chunk, bytecodePath, tracePath);
 
 	vm.chunk = &chunk;
 	vm.ip = vm.chunk->code;

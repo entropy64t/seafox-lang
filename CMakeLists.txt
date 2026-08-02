@@ -5,33 +5,37 @@ project(seafox
     LANGUAGES C
 )
 
-# Use modern C standard
 set(CMAKE_C_STANDARD 17)
 set(CMAKE_C_STANDARD_REQUIRED ON)
 set(CMAKE_C_EXTENSIONS OFF)
-# set(CMAKE_BUILD_TYPE Debug)
 
-file(GLOB SRC_FILES
+file(GLOB_RECURSE SRC_FILES
     CONFIGURE_DEPENDS
-    "${CMAKE_SOURCE_DIR}/src/*.c"
+    "${PROJECT_SOURCE_DIR}/src/*.c"
 )
 
-# Create executable
-add_executable(seafox
-    ${SRC_FILES}
-)
+add_executable(seafox ${SRC_FILES})
 
-# Include directories
 target_include_directories(seafox
     PRIVATE
         ${PROJECT_SOURCE_DIR}/include
+        ${PROJECT_SOURCE_DIR}/src/compiler
 )
 
-# Compiler warnings
 target_compile_options(seafox
     PRIVATE
         -Wall
         -Wextra
         -Wpedantic
-        --static
+)
+
+target_compile_options(seafox
+    PRIVATE
+        $<$<CONFIG:Release>:-O3>
+        $<$<CONFIG:Debug>:-O0 -g>
+)
+
+target_link_options(seafox
+    PRIVATE
+        -static
 )
