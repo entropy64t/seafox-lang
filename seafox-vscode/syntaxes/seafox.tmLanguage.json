@@ -1,0 +1,89 @@
+{
+    "$schema": "https://raw.githubusercontent.com/martinring/tmlanguage/master/tmlanguage.json",
+    "name": "seafox",
+    "scopeName": "source.seafox",
+    "patterns": [
+        {
+            "include": "#comments"
+        },
+        {
+            "include": "#strings"
+        },
+        {
+            "include": "#numbers"
+        },
+        {
+            "include": "#literals"
+        },
+        {
+            "include": "#keywords"
+        },
+        {
+            "include": "#operators"
+        }
+    ],
+    "repository": {
+        "comments": {
+            "patterns": [
+                {
+                    "match": "//.*$",
+                    "name": "comment.line.double-slash.seafox"
+                },
+                {
+                    "begin": "/\\*",
+                    "end": "\\*/",
+                    "name": "comment.block.seafox"
+                }
+            ]
+        },
+        "strings": {
+            "patterns": [
+                {
+                    "begin": "\"",
+                    "end": "\"",
+                    "name": "string.quoted.double.seafox"
+                }
+            ]
+        },
+        "numbers": {
+            "patterns": [
+                {
+                    "match": "\\b\\d+(\\.\\d+)?\\b",
+                    "name": "constant.numeric.seafox"
+                }
+            ]
+        },
+        "literals": {
+            "patterns": [
+                {
+                    "match": "\\b(true|false)",
+                    "name": "constant.language.boolean.seafox"
+                },
+                {
+                    "match": "\\b(null)",
+                    "name": "constant.language.null.seafox"
+                }
+            ]
+        },
+        "keywords": {
+            "patterns": [
+                {
+                    "match": "\\b(and|break|class|continue|elif|else|for|function|if|lambda|or|print|return|using|while)\\b",
+                    "name": "keyword.control.seafox"
+                },
+                {
+                    "match": "\\b(var|const|property|static|this|super)",
+                    "name": "storage.type"
+                }
+            ]
+        },
+        "operators": {
+            "patterns": [
+                {
+                    "match": "\\+\\+|--|==|=>|!=|<=|>=|\\+=|-=|\\*=|/=|[+\\-*/=!<>]",
+                    "name": "keyword.operator.seafox"
+                }
+            ]
+        }
+    }
+}

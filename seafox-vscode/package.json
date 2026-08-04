@@ -1,0 +1,48 @@
+{
+    "name": "seafox",
+    "displayName": "seafox",
+    "description": "Syntax highlighting for seafox",
+    "version": "0.0.2",
+    "publisher": "entropy64t",
+    "engines": {
+        "vscode": "^1.80.0"
+    },
+    "categories": [
+        "Programming Languages"
+    ],
+    "contributes": {
+        "languages": [
+            {
+                "id": "seafox",
+                "aliases": [
+                    "seafox"
+                ],
+                "extensions": [
+                    ".fox"
+                ],
+                "configuration": "./language-configuration.json"
+            }
+        ],
+        "grammars": [
+            {
+                "language": "seafox",
+                "scopeName": "source.seafox",
+                "path": "./syntaxes/seafox.tmLanguage.json"
+            }
+        ]
+    },
+    "main": "./extension.js",
+    "scripts": {
+        "build:scanner": "node lsp/build-scanner.js",
+        "prepack": "npm run build:scanner && node lsp/test-packaging.js",
+        "test:lsp": "node lsp/test.js && node lsp/test-packaging.js"
+    },
+    "dependencies": {
+        "vscode-languageclient": "^10.1.0",
+        "vscode-languageserver": "^9.0.0",
+        "vscode-languageserver-textdocument": "^1.0.0"
+    },
+    "activationEvents": [
+        "*"
+    ]
+}

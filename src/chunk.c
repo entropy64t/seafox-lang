@@ -11,7 +11,7 @@ void initChunk(Chunk* chunk) {
 	chunk->code = NULL;
 	// chunk->lines = NULL;
 
-	chunk->lineCounts = NULL;
+	chunk->bytecodeLengths = NULL;
 	chunk->lineCapacity = 0;
 
 	initValueArr(&chunk->constants);
@@ -23,57 +23,90 @@ void writeChunk(Chunk* chunk, byte b, int line) {
 		chunk->capacity = GROW_CAPACITY(oldCap);
 		chunk->code = GROW_ARRAY(byte, chunk->code, oldCap, chunk->capacity);
 	}
-	if (line >= chunk->lineCapacity) {
+	while (line >= chunk->lineCapacity) {
 		int oldCap = chunk->lineCapacity;
 		chunk->lineCapacity = GROW_CAPACITY(oldCap);
-		chunk->lineCounts = GROW_ARRAY(int, chunk->lineCounts, oldCap, chunk->lineCapacity);
+		chunk->bytecodeLengths = GROW_ARRAY(int, chunk->bytecodeLengths, oldCap, chunk->lineCapacity);
+		// init all past old cap to 0
+		for (int i = oldCap; i < chunk->lineCapacity; i++)
+			chunk->bytecodeLengths[i] = 0;
 	}
 
 	chunk->code[chunk->count] = b;
-	chunk->lineCounts[line]++;
+	chunk->bytecodeLengths[line]++;
 	chunk->count++;
 }
 
 void freeChunk(Chunk* chunk) {
 	FREE_ARRAY(byte, chunk->code, chunk->capacity);
-	FREE_ARRAY(int, chunk->lineCounts, chunk->capacity);
+	FREE_ARRAY(int, chunk->bytecodeLengths, chunk->capacity);
 	freeValueArr(&chunk->constants);
 	initChunk(chunk);
 }
 
-void appendChunk(Chunk* main, Chunk* toAdd) {
-	// fix consts
-	for (int i = 0; i < toAdd->count; i++) {
-		if (toAdd->code[i] == OP_CONSTANT_8) {
-			toAdd->code[i + 1] += main->constants.count;
+// append `source` to the end of `target`
+void appendChunk(Chunk* target, const Chunk* source) {
+	int constantOffset = target->constants.count;
+
+	for (int i = 0; i < source->count;) {
+		byte op = source->code[i];
+
+		writeChunk(target, op, getLine(source, i));
+
+		switch (op) {
+			case OP_CONSTANT_8:
+				{
+					byte index = source->code[i + 1];
+					writeChunk(target, index + constantOffset, getLine(source, i + 1));
+					i += 2;
+					break;
+				}
+
+			case OP_CONSTANT_24:
+				{
+					int index =
+						((int) source->code[i + 1] << 16) |
+						((int) source->code[i + 2] << 8) |
+						(int) source->code[i + 3];
+
+					index += constantOffset;
+
+					writeChunk(target, (index >> 16) & 0xff, getLine(source, i + 1));
+					writeChunk(target, (index >> 8) & 0xff, getLine(source, i + 2));
+					writeChunk(target, index & 0xff, getLine(source, i + 3));
+
+					i += 4;
+					break;
+				}
+
+			case OP_DEFINE_GLOBAL:
+			case OP_GET_GLOBAL:
+			case OP_SET_GLOBAL:
+			case OP_GET_LOCAL:
+			case OP_SET_LOCAL:
+			case OP_CALL:
+				writeChunk(target, source->code[i + 1], getLine(source, i + 1));
+				i += 2;
+				break;
+
+			case OP_JUMP:
+			case OP_JUMP_IF_TRUE:
+			case OP_JUMP_IF_FALSE:
+			case OP_LOOP:
+				writeChunk(target, source->code[i + 1], getLine(source, i + 1));
+				writeChunk(target, source->code[i + 2], getLine(source, i + 2));
+				i += 3;
+				break;
+
+			default:
+				i += 1;
+				break;
 		}
-		else if (toAdd->code[i] == OP_CONSTANT_24) {
-			byte constant[3];
-			constant[0] = toAdd->code[i + 1];
-			constant[1] = toAdd->code[i + 2];
-			constant[2] = toAdd->code[i + 3];
-			int count = ((int) constant[0] << 16) + ((int) constant[1] << 8) + ((int) constant[2]);
-			count += main->constants.count;
-			constant[0] = count >> 16;
-			constant[1] = count >> 8;
-			constant[2] = count;
-			toAdd->code[i + 1] = constant[0];
-			toAdd->code[i + 2] = constant[1];
-			toAdd->code[i + 3] = constant[2];
-		}
 	}
 
-	for (int i = 0; i < toAdd->count; i++) {
-		printf("write: %u\n", toAdd->code[i]);
-
-		writeChunk(main, toAdd->code[i], getLine(toAdd, i));
+	for (int i = 0; i < source->constants.count; i++) {
+		addConstant(target, source->constants.values[i]);
 	}
-	for (int i = 0; i < toAdd->constants.count; i++) {
-		addConstant(main, toAdd->constants.values[i]);
-	}
-
-	printf("written: \n");
-	disassembleChunk(main, "<chunk>");
 }
 
 int addConstant(Chunk* chunk, Value constant) {
@@ -105,10 +138,13 @@ int writeConstant(Chunk* chunk, Value constant, int line) {
 }
 
 int getLine(Chunk* chunk, int index) {
+	// printf("Get line from bytecode index %d\n", index);
+
 	int currLine = 0;
 	int currIndex = 0;
 	while (currIndex <= index) {
-		currIndex += chunk->lineCounts[currLine++];
+		// printf("Line %d has length %d", currLine, chunk->bytecodeLengths[currLine]);
+		currIndex += chunk->bytecodeLengths[currLine++];
 	}
 	return currLine - 1;
 }

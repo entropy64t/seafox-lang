@@ -24,10 +24,15 @@ static void freeObject(Object* object) {
 			}
 		case OBJ_FUNCTION:
 			{
-				break;
 				ObjFunction* function = (ObjFunction*) object;
 				freeChunk(&function->chunk);
 				FREE(ObjFunction, function);
+				break;
+			}
+		case OBJ_NATIVE_FN:
+			{
+				FREE(ObjNativeFn, object);
+				break;
 			}
 	}
 }

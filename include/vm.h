@@ -3,8 +3,10 @@
 #include "chunk.h"
 #include "value.h"
 #include "hashtable.h"
+#include "object.h"
 
-#define STACK_MAX 256
+#define FRAMES_MAX 1024
+#define STACK_MAX (FRAMES_MAX * LOCALS_COUNT)
 
 typedef enum InterpretResult
 {
@@ -13,10 +15,20 @@ typedef enum InterpretResult
 	INTERPRET_RUNTIME_ERROR
 } InterpretResult;
 
+typedef struct CallFrame
+{
+	ObjFunction* function;
+	byte* ip;
+	Value* slots;
+} CallFrame;
+
 typedef struct VM
 {
 	Chunk* chunk;
 	byte* ip;
+
+	CallFrame frames[FRAMES_MAX];
+	int frameCount;
 
 	Value stack[STACK_MAX];
 	Value* stackTop;
@@ -30,6 +42,7 @@ extern VM vm;
 
 void initVM();
 void freeVM();
+void runtimeError(const char* format, ...);
 InterpretResult interpret(const char* source, char* bytecodePath, const char* traceFile);
 
 void push(Value v);

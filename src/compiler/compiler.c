@@ -23,12 +23,8 @@ Chunk* currentChunk() {
 	return &current->function->chunk;
 }
 
-void setChunk(Chunk* chunk) {
-	compilingChunk = chunk;
-}
-
-static ObjFunction* endCompiler() {
-	emitByte(OP_RETURN);
+ObjFunction* endCompiler() {
+	emitReturn();
 
 	freeTable(&current->constantNames);
 
@@ -40,10 +36,13 @@ static ObjFunction* endCompiler() {
 	}
 #endif
 
+	current = current->enclosing;
+
 	return function;
 }
 
-static void initCompiler(Compiler* compiler, FunctionType type) {
+void initCompiler(Compiler* compiler, FunctionType type) {
+	compiler->enclosing = current;
 	compiler->function = NULL;
 	compiler->type = type;
 	compiler->localCount = 0;
@@ -51,6 +50,10 @@ static void initCompiler(Compiler* compiler, FunctionType type) {
 	initTable(&compiler->constantNames); // init const names
 	compiler->function = newFunction();
 	current = compiler;
+
+	if (type != TYPE_SCRIPT) {
+		current->function->name = copyString(parser.previous.start, parser.previous.length);
+	}
 
 	Local* local = &current->locals[current->localCount++];
 	local->depth = 0;
@@ -73,7 +76,7 @@ void endScope() {
 }
 
 // compile source code into bytecode
-bool compile(const char* source, Chunk* chunk) {
+ObjFunction* compile(const char* source) {
 	initScanner(source);
 	Compiler compiler;
 	initCompiler(&compiler, TYPE_SCRIPT);
@@ -92,7 +95,5 @@ bool compile(const char* source, Chunk* chunk) {
 
 	consume(TOKEN_EOF, "Expected end of program");
 
-	endCompiler();
-
-	return !parser.hadError;
+	return parser.hadError ? NULL : endCompiler();
 }

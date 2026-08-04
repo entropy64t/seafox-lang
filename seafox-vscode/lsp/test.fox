@@ -1,0 +1,15 @@
+function invoke(const fn) {
+    if (fn) return fn;
+    return lambda x => x;
+}
+
+function ask(const prompt, const convert) {
+    write(prompt, "> ");
+    const input = readln();
+    return invoke(convert)(input);
+}
+
+var dogs = ask("How many dogs?", lambda x => number(x));
+var type = ask("Type of dog", null);
+
+writeln("Request", dogs, "dogs of type", type);

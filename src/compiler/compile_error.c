@@ -1,7 +1,7 @@
 #include "compiler_internal.h"
 
 // report error at a given token `location`
-void errorAt(Token* location, const char* message) {
+void errorAt(Token* location, const char* format, ...) {
 	if (parser.panicMode)
 		return;
 
@@ -12,25 +12,36 @@ void errorAt(Token* location, const char* message) {
 	if (location->type == TOKEN_EOF) {
 		fprintf(stderr, " at end");
 	}
-	else if (location->type == TOKEN_ERROR) {
-		// Nothing.
-	}
-	else {
+	else if (location->type != TOKEN_ERROR) {
 		fprintf(stderr, " at '%.*s'", location->length, location->start);
 	}
 
-	fprintf(stderr, ": %s\n", message);
+	fprintf(stderr, ": ");
+
+	va_list args;
+	va_start(args, format);
+	vfprintf(stderr, format, args);
+	va_end(args);
+
+	fprintf(stderr, "\n");
+
 	parser.hadError = true;
 }
 
 // report error at current token
-void errorAtCurrent(const char* message) {
-	errorAt(&parser.current, message);
+void errorAtCurrent(const char* format, ...) {
+	va_list args;
+	va_start(args, format);
+	errorAt(&parser.current, format, args);
+	va_end(args);
 }
 
 // report error at the just-scanned token
-void error(const char* message) {
-	errorAt(&parser.previous, message);
+void error(const char* format, ...) {
+	va_list args;
+	va_start(args, format);
+	errorAt(&parser.previous, format, args);
+	va_end(args);
 }
 
 // synchronize the compiler to allow compilation after an error
@@ -42,7 +53,7 @@ void synchronize() {
 			return;
 		switch (parser.current.type) {
 			case TOKEN_CLASS:
-			case TOKEN_FUNC:
+			case TOKEN_FUNCTION:
 			case TOKEN_VAR:
 			case TOKEN_FOR:
 			case TOKEN_IF:

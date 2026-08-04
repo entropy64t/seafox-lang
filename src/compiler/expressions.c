@@ -30,9 +30,20 @@ void parse(Precedence precedence) {
 	}
 }
 
+void makeLambda();
+
 // parse an expression
 void expression() {
+	if (match(TOKEN_LAMBDA)) {
+		makeLambda();
+		return;
+	}
+
 	parse(PREC_ASSIGNMENT);
+}
+
+void makeLambda() {
+	function(TYPE_LAMBDA);
 }
 
 // parse a number literal
@@ -230,9 +241,29 @@ static void logicOr(bool canAssign) {
 	debugUnlog();
 }
 
+static byte argumentList() {
+	byte count = 0;
+	if (!check(TOKEN_RIGHT_PAREN)) {
+		do {
+			expression();
+			if (count >= 255) {
+				error("A function can have at most 255 parameters");
+			}
+			count++;
+		} while (match(TOKEN_COMMA));
+	}
+	consume(TOKEN_RIGHT_PAREN, "Expected ')' after arguments");
+	return count;
+}
+
+static void call(bool canAssign) {
+	byte argCount = argumentList();
+	emitBytes(OP_CALL, argCount);
+}
+
 // pratt table : BEGIN
 ParseRule rules[] = {
-	[TOKEN_LEFT_PAREN] = {grouping, NULL, NULL, PREC_NONE},
+	[TOKEN_LEFT_PAREN] = {grouping, call, NULL, PREC_CALL},
 	[TOKEN_RIGHT_PAREN] = {NULL, NULL, NULL, PREC_NONE},
 	[TOKEN_LEFT_BRACE] = {array, NULL, NULL, PREC_NONE},
 	[TOKEN_RIGHT_BRACE] = {NULL, NULL, NULL, PREC_NONE},
@@ -267,7 +298,8 @@ ParseRule rules[] = {
 	[TOKEN_ELSE] = {NULL, NULL, NULL, PREC_NONE},
 	[TOKEN_FALSE] = {literal, NULL, NULL, PREC_NONE},
 	[TOKEN_FOR] = {NULL, NULL, NULL, PREC_NONE},
-	[TOKEN_FUNC] = {NULL, NULL, NULL, PREC_NONE},
+	[TOKEN_FUNCTION] = {NULL, NULL, NULL, PREC_NONE},
+	[TOKEN_LAMBDA] = {NULL, NULL, NULL, PREC_NONE},
 	[TOKEN_IF] = {NULL, NULL, NULL, PREC_NONE},
 	[TOKEN_NULL] = {literal, NULL, NULL, PREC_NONE},
 	[TOKEN_OR] = {NULL, logicOr, NULL, PREC_OR},
@@ -278,7 +310,6 @@ ParseRule rules[] = {
 	[TOKEN_TRUE] = {literal, NULL, NULL, PREC_NONE},
 	[TOKEN_VAR] = {NULL, NULL, NULL, PREC_NONE},
 	[TOKEN_WHILE] = {NULL, NULL, NULL, PREC_NONE},
-	[TOKEN_VOID] = {NULL, NULL, NULL, PREC_NONE},
 	[TOKEN_STATIC] = {NULL, NULL, NULL, PREC_NONE},
 	[TOKEN_ELIF] = {NULL, NULL, NULL, PREC_NONE},
 	[TOKEN_BREAK] = {NULL, NULL, NULL, PREC_NONE},

@@ -40,7 +40,7 @@ static int constantInstruction(FILE* out, const char* name, Chunk* chunk, int of
 
 	fprintf(out, "%-16s %4d '", name, index);
 
-	printValue(chunk->constants.values[index], "");
+	fprintValue(out, chunk->constants.values[index], "");
 
 	fprintf(out, "'\n");
 
@@ -125,6 +125,8 @@ int disassembleInstruction(FILE* out, Chunk* chunk, int offset) {
 			return jumpInstruction(out, "JUMP_IF_TRUE", 1, chunk, offset);
 		case OP_JUMP_IF_FALSE:
 			return jumpInstruction(out, "JUMP_IF_FALSE", 1, chunk, offset);
+		case OP_CALL:
+			return byteInstruction(out, "CALL", chunk, offset);
 		default:
 			fprintf(out, "Unknown opcode %u\n", instruction);
 			return offset + 1;

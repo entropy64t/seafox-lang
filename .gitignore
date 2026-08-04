@@ -1,6 +1,11 @@
 out
 build
 .vscode
-debug.sh
-bytecode
-trace
+**/.venv/
+**/.mypy_cache/
+**/node_modules/
+**/__pycache__/
+*.so
+scanner_bridge
+*.vsix
+util/

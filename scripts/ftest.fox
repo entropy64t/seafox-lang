@@ -1,0 +1,60 @@
+var stuff = "example";
+
+function dostuff() {
+    print "doing stuff";
+    print stuff;
+}
+
+writeln("a string,", "and a cat");
+
+function withparams(p1, p2, const p3) {
+    print p1 + p2;
+    p2 = p3;
+    print p2;
+    print p3;
+}
+
+print dostuff;
+print withparams;
+
+dostuff();
+
+/* (should it?) TODO
+is should be an error to pass a const as a var, like:
+function x(param) { param = 5; }
+const constant = 0;
+x(constant);
+*/
+
+const gamma = "7";
+withparams("alfa", "beta", gamma);
+print dostuff();
+
+function ask(const prompt) {
+    write(prompt + " > ");
+    return readln();
+}
+
+function makeCoffee(const type) {
+    writeln("Making coffee...");
+    writeln(type, "is ready!");
+    return "SUCCESS";
+}
+
+function expr(x, y, z) => x + y * z;
+
+writeln(expr(1, 2, 3)); // should be 7
+
+const result = ask("Do you want coffee?");
+if (result == "yes") 
+    makeCoffee("Espresso");
+
+
+function fib(const n) {
+    if (n < 2) return n;
+    return fib(n - 2) + fib(n - 1);
+}
+
+const start = getTime();
+writeln(fib(35));
+writeln("fib(35) took", getTime() - start, "seconds");

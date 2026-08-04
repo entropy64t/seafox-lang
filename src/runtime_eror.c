@@ -66,7 +66,8 @@ static const char* type_messages[VALUE_TYPE_COUNT] = {
 static const char* objtypes[OBJ_TYPE_COUNT] = {
 	[OBJ_STRING] = "string",
 	[OBJ_ARRAY] = "array",
-};
+	[OBJ_FUNCTION] = "function",
+	[OBJ_NATIVE_FN] = "native function"};
 
 static const char* simpleValue(int v) {
 	if (v >= 0 && v < VALUE_TYPE_COUNT && type_messages[v]) {

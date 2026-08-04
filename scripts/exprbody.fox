@@ -1,0 +1,3 @@
+function expr(x, y, z) => x + y * z;
+
+writeln(expr(1, 2, 3)); // should be 7

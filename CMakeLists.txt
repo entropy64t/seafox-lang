@@ -37,5 +37,6 @@ target_compile_options(seafox
 
 target_link_options(seafox
     PRIVATE
-        -static
+        $<$<CONFIG:Debug>:-fsanitize=address>
+        $<$<CONFIG:Release>:-static>
 )

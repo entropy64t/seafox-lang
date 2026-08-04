@@ -61,10 +61,12 @@ typedef enum FunctionType
 {
 	TYPE_SCRIPT,
 	TYPE_FUNCTION,
+	TYPE_LAMBDA,
 } FunctionType;
 
 typedef struct Compiler
 {
+	struct Compiler* enclosing;
 	ObjFunction* function;
 	FunctionType type;
 	Local locals[LOCALS_COUNT];
@@ -80,22 +82,25 @@ extern Compiler* current; // bad for mulithreading
 
 Chunk* currentChunk();
 
-void setChunk(Chunk* chunk);
+// -- void setChunk(Chunk* chunk);
 
 void beginScope();
 
 void endScope();
 
+void initCompiler(Compiler* compiler, FunctionType type);
+ObjFunction* endCompiler();
+
 // compile_error.c //
 
 // report error at a given token `location`
-void errorAt(Token* location, const char* message);
+void errorAt(Token* location, const char* format, ...);
 
 // report error at current token
-void errorAtCurrent(const char* message);
+void errorAtCurrent(const char* format, ...);
 
 // report error at the just-scanned token
-void error(const char* message);
+void error(const char* format, ...);
 
 // synchronize the compiler to allow compilation after an error
 void synchronize();
@@ -146,6 +151,8 @@ void emitLoop(int offset);
 // parse a variable
 byte parseVariable(bool isConst, const char* errorMessage);
 
+void initializeLocal();
+
 // define a global variable
 // `global` - where in the constants array is the variable's name
 void defineVariable(byte global);
@@ -165,3 +172,7 @@ void parse(Precedence precedence);
 
 // statements.c //
 void declaration();
+void block();
+
+// functions.c //
+void function(FunctionType type);

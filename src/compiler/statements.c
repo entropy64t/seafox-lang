@@ -123,18 +123,25 @@ static void forStatement() {
 
 	int exitJump = forCondition();
 
-	Chunk incrementChunk;
-	Chunk* enclosing = currentChunk();
-	initChunk(&incrementChunk);
-	setChunk(&incrementChunk);
+	// THIS IS NOT SAFE, AVOID IT
+	// it is used here to swap chunks, so that for loops have less jump instructions
+
+	// 0. Capture current chunk by value
+	Chunk enclosing = *currentChunk();
+
+	// 1. Clear current chunk
+	initChunk(&current->function->chunk);
 	loopStart = forIncrement(loopStart);
-	setChunk(enclosing);
+	// 2. Capture the chunk with for increment by value
+	Chunk increment = *currentChunk();
+	// 3. Restore the previous chunk
+	current->function->chunk = enclosing;
 
 	statement();
 
-	disassembleChunk(&incrementChunk, "FOR INCREMENT");
+	disassembleChunk(&increment, "FOR INCREMENT");
 
-	appendChunk(enclosing, &incrementChunk);
+	appendChunk(currentChunk(), &increment);
 
 	emitLoop(loopStart);
 
@@ -146,13 +153,26 @@ static void forStatement() {
 	endScope();
 }
 
-// block
-static void block() {
-	while (!check(TOKEN_RIGHT_BRACE) && !check(TOKEN_EOF)) {
-		declaration();
+static void functionDeclaration() {
+	byte global = parseVariable(true, "Expected function name.");
+	initializeLocal();
+	function(TYPE_FUNCTION);
+	defineVariable(global);
+}
+
+static void returnStatement() {
+	if (current->type == TYPE_SCRIPT) {
+		error("Return statement in top-level code");
+	}
+	if (match(TOKEN_SEMICOLON)) {
+		emitReturn();
+		return;
 	}
 
-	consume(TOKEN_RIGHT_BRACE, "Expected '}' after block.");
+	expression();
+	consume(TOKEN_SEMICOLON, "Expected ';' after return value");
+
+	emitByte(OP_RETURN);
 }
 
 static void statement() {
@@ -161,6 +181,9 @@ static void statement() {
 	}
 	else if (match(TOKEN_IF)) {
 		ifStatement();
+	}
+	else if (match(TOKEN_RETURN)) {
+		returnStatement();
 	}
 	else if (match(TOKEN_WHILE)) {
 		whileStatement();
@@ -178,8 +201,20 @@ static void statement() {
 	}
 }
 
+// block
+void block() {
+	while (!check(TOKEN_RIGHT_BRACE) && !check(TOKEN_EOF)) {
+		declaration();
+	}
+
+	consume(TOKEN_RIGHT_BRACE, "Expected '}' after block.");
+}
+
 void declaration() {
-	if (match(TOKEN_VAR) || match(TOKEN_CONST)) {
+	if (match(TOKEN_FUNCTION)) {
+		functionDeclaration();
+	}
+	else if (match(TOKEN_VAR) || match(TOKEN_CONST)) {
 		varDeclaration(parser.previous.type == TOKEN_CONST);
 	}
 	else {

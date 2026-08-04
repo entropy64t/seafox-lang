@@ -76,3 +76,7 @@ void emitLoop(int loopStart) {
 	emitByte((offset >> 8) & 0xff);
 	emitByte(offset & 0xff);
 }
+
+void emitReturn() {
+	emitBytes(OP_NULL, OP_RETURN);
+}

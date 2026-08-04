@@ -83,6 +83,13 @@ ObjArray* takeArray(Value* items, int length) {
 	return allocateArray(items, length);
 }
 
+ObjArray* newArray(int length) {
+	Value* nulls = ALLOCATE(Value, length);
+	for (int i = 0; i < length; i++)
+		nulls[i] = NULL_VAL;
+	return allocateArray(nulls, length);
+}
+
 ObjFunction* newFunction() {
 	ObjFunction* function = ALLOCATE_OBJ(ObjFunction, OBJ_FUNCTION);
 	function->arity = 0;
@@ -91,34 +98,48 @@ ObjFunction* newFunction() {
 	return function;
 }
 
-static void printArray(ObjArray* array) {
-	printf("{ ");
+static void fprintArray(FILE* file, ObjArray* array) {
+	fprintf(file, "{ ");
 
 	for (int i = 0; i < array->length - 1; i++) {
-		printValue(array->items[i], ", ");
+		fprintValue(file, array->items[i], ", ");
 	}
-	printValue(array->items[array->length - 1], " ");
-	printf("}");
+	fprintValue(file, array->items[array->length - 1], " ");
+	fprintf(file, "}");
 }
 
-static void printFunction(ObjFunction* function) {
+static void fprintFunction(FILE* file, ObjFunction* function) {
 	if (function->name == NULL) {
-		printf("<script>");
+		fprintf(file, "<script>");
 		return;
 	}
-	printf("<function %s>", function->name->chars);
+	fprintf(file, "<function %s>", function->name->chars);
+}
+
+void fprintObject(FILE* file, Value value) {
+	switch (OBJ_TYPE(value)) {
+		case OBJ_STRING:
+			fprintf(file, "%s", AS_CSTRING(value));
+			break;
+		case OBJ_ARRAY:
+			fprintArray(file, AS_ARRAY(value));
+			break;
+		case OBJ_FUNCTION:
+			fprintFunction(file, AS_FUNCTION(value));
+			break;
+		case OBJ_NATIVE_FN:
+			fprintf(file, "<native function %s>", AS_NATIVE(value)->name);
+	}
 }
 
 void printObject(Value value) {
-	switch (OBJ_TYPE(value)) {
-		case OBJ_STRING:
-			printf("%s", AS_CSTRING(value));
-			break;
-		case OBJ_ARRAY:
-			printArray(AS_ARRAY(value));
-			break;
-		case OBJ_FUNCTION:
-			printFunction(AS_FUNCTION(value));
-			break;
-	}
+	fprintObject(stdout, value);
+}
+
+ObjNativeFn* newNativeFn(NativeFn function, const char* name, int arity) {
+	ObjNativeFn* native = ALLOCATE_OBJ(ObjNativeFn, OBJ_NATIVE_FN);
+	native->function = function;
+	native->name = name;
+	native->arity = arity;
+	return native;
 }

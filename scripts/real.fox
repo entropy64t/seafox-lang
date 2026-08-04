@@ -1,0 +1,8 @@
+function ask(prompt, converter) {
+    write(prompt + " > ");
+    return converter(readln());
+}
+
+const str = ask("Enter a string", lambda str => "'" + str + "'");
+const num = ask("Enter a number", lambda str => number(str));
+writeln("Entered " + str + ", and", num * 2);

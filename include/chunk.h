@@ -8,8 +8,6 @@
 // TODO : reorder for readability
 typedef enum Opcode
 {
-	OP_RETURN,
-
 	OP_CONSTANT_8,
 	OP_CONSTANT_24,
 
@@ -48,13 +46,16 @@ typedef enum Opcode
 	OP_LOOP,
 	OP_JUMP_IF_TRUE,
 	OP_JUMP_IF_FALSE,
+
+	OP_CALL,
+	OP_RETURN,
 } Opcode;
 
 typedef struct Chunk
 {
 	byte* code;
 
-	int* lineCounts;
+	int* bytecodeLengths;
 	int lineCapacity;
 
 	int count;
@@ -65,7 +66,7 @@ typedef struct Chunk
 void initChunk(Chunk* chunk);
 void writeChunk(Chunk* chunk, byte b, int line);
 void freeChunk(Chunk* chunk);
-void appendChunk(Chunk* main, Chunk* toAdd);
+void appendChunk(Chunk* target, const Chunk* source);
 int addConstant(Chunk* chunk, Value constant);
 int writeConstant(Chunk* chunk, Value constant, int line);
 int getLine(Chunk* chunk, int index);

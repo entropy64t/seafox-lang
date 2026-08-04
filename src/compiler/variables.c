@@ -47,6 +47,7 @@ static void declareVariable() {
 		return;
 
 	Token* name = &parser.previous;
+	// printf("decalre local %.*s\n", name->length, name->start);
 	// check if there already is a variable in this scope with the same name
 	for (int i = current->localCount - 1; i >= 0; i--) {
 		Local* local = &current->locals[i];
@@ -67,7 +68,7 @@ byte parseVariable(bool isConst, const char* errorMessage) {
 	consume(TOKEN_IDENTIFIER, errorMessage);
 
 	declareVariable();
-	// if it is cont then put it in constants names table
+	// if it is const then put it in constants names table
 	if (isConst) {
 		ObjString* key = copyString(parser.previous.start, parser.previous.length);
 		tableSet(&current->constantNames, key, NULL_VAL); // set the variable as a const
@@ -78,7 +79,11 @@ byte parseVariable(bool isConst, const char* errorMessage) {
 	return identifierConstant(&parser.previous);
 }
 
-static void initializeLocal() {
+void initializeLocal() {
+	// dont initialize globals
+	if (current->scopeDepth == 0)
+		return;
+	// printf("init local %.*s\n", current->locals[current->localCount - 1].name.length, current->locals[current->localCount - 1].name.start);
 	current->locals[current->localCount - 1].depth = current->scopeDepth;
 }
 
@@ -149,6 +154,9 @@ void namedVariable(Token name, bool canAssign) {
 				break;
 			case TOKEN_SLASH_EQUAL:
 				emitByte(OP_DIVIDE);
+				break;
+			default:
+				error("Unsupported operator type");
 				break;
 		}
 		emitBytes(setOp, (byte) arg);

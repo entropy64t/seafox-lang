@@ -4,10 +4,11 @@
 #include "common.h"
 #include "scanner.h"
 
-typedef struct
+typedef struct Scanner
 {
 	const char* start;
 	const char* current;
+	const char* source;
 	int line;
 } Scanner;
 
@@ -21,6 +22,7 @@ static Token makeToken(TokenType type) {
 	Token token = {
 		.type = type,
 		.start = scanner.start,
+		.position = scanner.start - scanner.source,
 		.length = (int) (scanner.current - scanner.start),
 		.line = scanner.line};
 	return token;
@@ -30,6 +32,7 @@ static Token errorToken(const char* message) {
 	Token token = {
 		.type = TOKEN_ERROR,
 		.start = message,
+		.position = 0,
 		.length = (int) strlen(message),
 		.line = scanner.line};
 	return token;
@@ -177,16 +180,12 @@ static TokenType identifierType() {
 		case 4:
 			if (memcmp(scanner.start, "else", 4) == 0)
 				return TOKEN_ELSE;
-			if (memcmp(scanner.start, "func", 4) == 0)
-				return TOKEN_FUNC;
 			if (memcmp(scanner.start, "null", 4) == 0)
 				return TOKEN_NULL;
 			if (memcmp(scanner.start, "this", 4) == 0)
 				return TOKEN_THIS;
 			if (memcmp(scanner.start, "true", 4) == 0)
 				return TOKEN_TRUE;
-			if (memcmp(scanner.start, "void", 4) == 0)
-				return TOKEN_VOID;
 			if (memcmp(scanner.start, "elif", 4) == 0)
 				return TOKEN_ELIF;
 			break;
@@ -215,6 +214,8 @@ static TokenType identifierType() {
 				return TOKEN_RETURN;
 			if (memcmp(scanner.start, "static", 6) == 0)
 				return TOKEN_STATIC;
+			if (memcmp(scanner.start, "lambda", 6) == 0)
+				return TOKEN_LAMBDA;
 			break;
 
 		case 8:
@@ -222,6 +223,8 @@ static TokenType identifierType() {
 				return TOKEN_CONTINUE;
 			if (memcmp(scanner.start, "property", 8) == 0)
 				return TOKEN_PROPERTY;
+			if (memcmp(scanner.start, "function", 8) == 0)
+				return TOKEN_FUNCTION;
 			break;
 	}
 
@@ -239,6 +242,7 @@ static Token identifier() {
 void initScanner(const char* source) {
 	scanner.start = source;
 	scanner.current = source;
+	scanner.source = source;
 	scanner.line = 1;
 }
 
@@ -292,7 +296,7 @@ Token scan() {
 		case '!':
 			return MAKE_MATCHING('=', TOKEN_BANG_EQUAL, TOKEN_BANG);
 		case '=':
-			return MAKE_MATCHING('=', TOKEN_EQUAL_EQUAL, TOKEN_EQUAL);
+			return MAKE_MATCHING_3('=', '>', TOKEN_EQUAL_EQUAL, TOKEN_FORWARD, TOKEN_EQUAL);
 		case '<':
 			return MAKE_MATCHING('=', TOKEN_LESS_EQUAL, TOKEN_LESS);
 		case '>':
@@ -304,4 +308,5 @@ Token scan() {
 
 	return errorToken("Unexpected character.");
 #undef MAKE_MATCHING
+#undef MAKE_MATCHING_3
 }
