@@ -17,6 +17,9 @@ typedef enum TokenType
 	TOKEN_SEMICOLON,
 	TOKEN_SLASH,
 	TOKEN_STAR,
+	TOKEN_QMARK,
+	TOKEN_COLON,
+	TOKEN_MODULO,
 
 	// One or two character tokens.
 	TOKEN_BANG,
@@ -62,6 +65,8 @@ typedef enum TokenType
 	TOKEN_WHILE,
 	TOKEN_CONST,
 	TOKEN_LAMBDA,
+	TOKEN_IS,
+	TOKEN_NOT,
 
 	// added later
 	TOKEN_STATIC,

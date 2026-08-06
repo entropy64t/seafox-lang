@@ -163,7 +163,7 @@ int main(int argc, char** argv) {
 	while (1) {
 		Token token = scan();
 		write_token_json(&token, source_text);
-		if (token.type == 56) {
+		if (token.type == 60) {
 			break;
 		}
 	}

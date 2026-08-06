@@ -9,3 +9,4 @@ build
 scanner_bridge
 *.vsix
 util/
+scripts/

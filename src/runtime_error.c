@@ -10,28 +10,28 @@
    Low-level output helpers
    ============================ */
 
-static void put_char(char c) {
+static void putChar(char c) {
 	write(2, &c, 1);
 }
 
-static void put_str(const char* s) {
+static void putStr(const char* s) {
 	if (!s) {
-		put_str("(null)");
+		putStr("(null)");
 		return;
 	}
 	while (*s) {
-		put_char(*s++);
+		putChar(*s++);
 	}
 }
 
-static void put_uint(unsigned long n, int base, bool uppercase) {
+static void putUint(unsigned long n, int base, bool uppercase) {
 	char buffer[32];
 	const char* digits = uppercase ? "0123456789ABCDEF" : "0123456789abcdef";
 
 	int i = 0;
 
 	if (n == 0) {
-		put_char('0');
+		putChar('0');
 		return;
 	}
 
@@ -41,37 +41,25 @@ static void put_uint(unsigned long n, int base, bool uppercase) {
 	}
 
 	while (i--) {
-		put_char(buffer[i]);
+		putChar(buffer[i]);
 	}
 }
 
-static void put_int(long n) {
+static void putInt(long n) {
 	if (n < 0) {
-		put_char('-');
-		put_uint((unsigned long) (-n), 10, false);
+		putChar('-');
+		putUint((unsigned long) (-n), 10, false);
 	}
 	else {
-		put_uint((unsigned long) n, 10, false);
+		putUint((unsigned long) n, 10, false);
 	}
 }
 
 /* Predefined messages for enum values */
 
-static const char* type_messages[VALUE_TYPE_COUNT] = {
-	[VAL_BOOL] = "bool",
-	[VAL_NUMBER] = "number",
-	[VAL_NULL] = "null",
-	[VAL_OBJECT] = "object"};
-
-static const char* objtypes[OBJ_TYPE_COUNT] = {
-	[OBJ_STRING] = "string",
-	[OBJ_ARRAY] = "array",
-	[OBJ_FUNCTION] = "function",
-	[OBJ_NATIVE_FN] = "native function"};
-
 static const char* simpleValue(int v) {
-	if (v >= 0 && v < VALUE_TYPE_COUNT && type_messages[v]) {
-		return type_messages[v];
+	if (v >= 0 && v < VALUE_TYPE_COUNT && types[v]) {
+		return types[v];
 	}
 	return "<invalid enum>";
 }
@@ -88,10 +76,10 @@ static void printType(Value* v) {
 		case VAL_BOOL:
 		case VAL_NULL:
 		case VAL_NUMBER:
-			put_str(simpleValue(v->type));
+			putStr(simpleValue(v->type));
 			break;
 		case VAL_OBJECT:
-			put_str(objectValue(v->as.object->type));
+			putStr(objectValue(v->as.object->type));
 			break;
 	}
 }
@@ -105,7 +93,7 @@ int rte(const char* fmt, va_list args) {
 
 	for (; *fmt; fmt++) {
 		if (*fmt != '%') {
-			put_char(*fmt);
+			putChar(*fmt);
 			written++;
 			continue;
 		}
@@ -116,35 +104,35 @@ int rte(const char* fmt, va_list args) {
 			case 'd':
 				{
 					int v = va_arg(args, int);
-					put_int(v);
+					putInt(v);
 					break;
 				}
 
 			case 'u':
 				{
 					unsigned int v = va_arg(args, unsigned int);
-					put_uint(v, 10, false);
+					putUint(v, 10, false);
 					break;
 				}
 
 			case 'x':
 				{
 					unsigned int v = va_arg(args, unsigned int);
-					put_uint(v, 16, false);
+					putUint(v, 16, false);
 					break;
 				}
 
 			case 'c':
 				{
 					char c = (char) va_arg(args, int);
-					put_char(c);
+					putChar(c);
 					break;
 				}
 
 			case 's':
 				{
 					char* s = va_arg(args, char*);
-					put_str(s);
+					putStr(s);
 					break;
 				}
 
@@ -152,7 +140,7 @@ int rte(const char* fmt, va_list args) {
 				{
 					/* Custom enum printer */
 					int v = va_arg(args, int); /* enum promoted to int */
-					put_str(simpleValue(v));
+					putStr(simpleValue(v));
 					break;
 				}
 
@@ -173,13 +161,13 @@ int rte(const char* fmt, va_list args) {
 				}
 
 			case '%':
-				put_char('%');
+				putChar('%');
 				break;
 
 			default:
 				/* Unknown specifier */
-				put_char('%');
-				put_char(*fmt);
+				putChar('%');
+				putChar(*fmt);
 				break;
 		}
 	}

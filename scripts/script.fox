@@ -1,10 +1,35 @@
-function set(const x) {
-    writeln("before set", x);
-    x = "string";
-    writeln("after set", x);
+var arr = [1, 2, 3, 4, 5, 6, 7];
+
+function filter(const arr, const fn) {
+    if (arr is not Array) return null;
+    if (fn is not Function) return null;
+
+    var count = 0;
+    for (var i = 0; i < length(arr); i++) {
+        if (fn(arr[i])) count++;
+    }
+
+    var filtered = Array(count);
+    var j = 0;
+    for (var i = 0; i < length(arr); i++) {
+        if (fn(arr[i])) {
+            filtered[j] = arr[i];
+            j++;
+        }
+    }
+    return filtered;
 }
 
-var k = 8;
-writeln("before call", k);
-set(k);
-writeln("after call", k);
+function select(arr, const fn) {
+    if (arr is not Array) return null;
+    if (fn is not Function) return null;
+
+    for (var i = 0; i < length(arr); i++) arr[i] = fn(arr[i]);
+
+    return arr;
+}
+
+var iseven = lambda x => x % 2 == 0;
+print filter(arr, iseven);
+print select(arr, lambda x => x * x);
+print select(arr, iseven);

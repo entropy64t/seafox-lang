@@ -68,7 +68,7 @@
         "keywords": {
             "patterns": [
                 {
-                    "match": "\\b(and|break|class|continue|elif|else|for|function|if|lambda|or|print|return|using|while)\\b",
+                    "match": "\\b(is|not|and|break|class|continue|elif|else|for|function|if|lambda|or|print|return|using|while)\\b",
                     "name": "keyword.control.seafox"
                 },
                 {

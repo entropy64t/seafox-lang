@@ -32,6 +32,7 @@ typedef enum Precedence
 {
 	PREC_NONE,
 	PREC_ASSIGNMENT, // =
+	PREC_TERANRY,
 	PREC_OR,		 // or
 	PREC_AND,		 // and
 	PREC_EQUALITY,	 // == !=
@@ -55,7 +56,14 @@ typedef struct Local
 {
 	Token name;
 	int depth;
+	bool isCaptured;
 } Local;
+
+typedef struct Upvalue
+{
+	byte index;
+	bool isLocal;
+} Upvalue;
 
 typedef enum FunctionType
 {
@@ -70,6 +78,7 @@ typedef struct Compiler
 	ObjFunction* function;
 	FunctionType type;
 	Local locals[LOCALS_COUNT];
+	Upvalue upvalues[LOCALS_COUNT];
 	HashTable constantNames;
 	int localCount;
 	int scopeDepth;
@@ -131,6 +140,12 @@ void emitBytes(byte b1, byte b2);
 
 // write `n` bytes to the active chunk
 void emitN(size_t n, ...);
+
+#define OPCODE(mcValue) ((byte) ((mcValue >> 24) & BYTE_MAX))
+#define CONSTANT(mcValue) ((int) (mcValue & 0x00ffffff))
+
+// make a constant, return its opcode (high byte) and index (low 3 bytes)
+int makeConstant(Value value);
 
 // emit a constant
 int emitConstant(Value value);

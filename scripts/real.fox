@@ -1,8 +1,14 @@
+function invoke(const fn) => 
+    fn ? fn : (lambda x => x);
+
 function ask(prompt, converter) {
     write(prompt + " > ");
-    return converter(readln());
+    const input = readln();
+    return invoke(converter)(input);
 }
 
 const str = ask("Enter a string", lambda str => "'" + str + "'");
 const num = ask("Enter a number", lambda str => number(str));
+const raw = ask("Enter a string", null);
 writeln("Entered " + str + ", and", num * 2);
+writeln(raw);

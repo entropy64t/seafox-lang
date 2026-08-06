@@ -39,6 +39,7 @@ static void addLocal(Token name) {
 	Local* local = &current->locals[current->localCount++];
 	local->name = name;
 	local->depth = -1;
+	local->isCaptured = false;
 }
 
 // declare local variable from the value at the top of the stack
@@ -98,6 +99,45 @@ void defineVariable(byte global) {
 	emitBytes(OP_DEFINE_GLOBAL, global);
 }
 
+static int addUpvalue(Compiler* compiler, byte index, bool isLocal) {
+	int upvalueCount = compiler->function->upvalueCount;
+
+	for (int i = 0; i < upvalueCount; i++) {
+		Upvalue* upvalue = &compiler->upvalues[i];
+		if (upvalue->index == index && upvalue->isLocal == isLocal) {
+			return i;
+		}
+	}
+
+	if (upvalueCount >= LOCALS_COUNT) {
+		error("Too many closure variables in a function");
+		return 0;
+	}
+
+	compiler->upvalues[upvalueCount].isLocal = isLocal;
+	compiler->upvalues[upvalueCount].index = index;
+	return compiler->function->upvalueCount++;
+}
+
+static int resolveUpvalue(Compiler* compiler, Token* name) {
+	if (compiler->enclosing == NULL)
+		return -1; // no upvalues if in global scope
+
+	int local = resolveLocal(compiler->enclosing, name);
+	if (local != -1) {
+		// found it
+		compiler->enclosing->locals[local].isCaptured = true;
+		return addUpvalue(compiler, (byte) local, true);
+	}
+
+	int upvalue = resolveUpvalue(compiler->enclosing, name);
+	if (upvalue != -1) {
+		return addUpvalue(compiler, (byte) upvalue, false);
+	}
+
+	return -1;
+}
+
 // access a variable
 void namedVariable(Token name, bool canAssign) {
 	byte getOp, setOp;
@@ -105,6 +145,10 @@ void namedVariable(Token name, bool canAssign) {
 	if (arg != -1) {
 		getOp = OP_GET_LOCAL;
 		setOp = OP_SET_LOCAL;
+	}
+	else if ((arg = resolveUpvalue(current, &name)) != -1) {
+		getOp = OP_GET_UPVALUE;
+		setOp = OP_SET_UPVALUE;
 	}
 	else {
 		arg = identifierConstant(&name);

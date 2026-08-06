@@ -4,64 +4,73 @@ const { spawnSync } = require('child_process');
 
 const bridgePath = path.join(__dirname, 'scanner_bridge');
 
+let nextTokenTypeValue = 0;
+function nextTokenType() {
+    return nextTokenTypeValue++;
+}
+
 const TokenType = {
-    TOKEN_LEFT_PAREN: 0,
-    TOKEN_RIGHT_PAREN: 1,
-    TOKEN_LEFT_BRACE: 2,
-    TOKEN_RIGHT_BRACE: 3,
-    TOKEN_COMMA: 4,
-    TOKEN_DOT: 5,
-    TOKEN_MINUS: 6,
-    TOKEN_PLUS: 7,
-    TOKEN_PLUS_PLUS: 8,
-    TOKEN_MINUS_MINUS: 9,
-    TOKEN_SEMICOLON: 10,
-    TOKEN_SLASH: 11,
-    TOKEN_STAR: 12,
-    TOKEN_BANG: 13,
-    TOKEN_BANG_EQUAL: 14,
-    TOKEN_EQUAL: 15,
-    TOKEN_EQUAL_EQUAL: 16,
-    TOKEN_GREATER: 17,
-    TOKEN_GREATER_EQUAL: 18,
-    TOKEN_LESS: 19,
-    TOKEN_LESS_EQUAL: 20,
-    TOKEN_FORWARD: 21,
-    TOKEN_PLUS_EQUAL: 22,
-    TOKEN_MINUS_EQUAL: 23,
-    TOKEN_STAR_EQUAL: 24,
-    TOKEN_SLASH_EQUAL: 25,
-    TOKEN_LEFT_BRACKET: 26,
-    TOKEN_RIGHT_BRACKET: 27,
-    TOKEN_IDENTIFIER: 28,
-    TOKEN_STRING: 29,
-    TOKEN_NUMBER: 30,
-    TOKEN_AND: 31,
-    TOKEN_CLASS: 32,
-    TOKEN_ELSE: 33,
-    TOKEN_FALSE: 34,
-    TOKEN_FOR: 35,
-    TOKEN_FUNCTION: 36,
-    TOKEN_IF: 37,
-    TOKEN_NULL: 38,
-    TOKEN_OR: 39,
-    TOKEN_PRINT: 40,
-    TOKEN_RETURN: 41,
-    TOKEN_SUPER: 42,
-    TOKEN_THIS: 43,
-    TOKEN_TRUE: 44,
-    TOKEN_VAR: 45,
-    TOKEN_WHILE: 46,
-    TOKEN_CONST: 47,
-    TOKEN_LAMBDA: 48,
-    TOKEN_STATIC: 49,
-    TOKEN_ELIF: 50,
-    TOKEN_BREAK: 51,
-    TOKEN_CONTINUE: 52,
-    TOKEN_USING: 53,
-    TOKEN_PROPERTY: 54,
-    TOKEN_ERROR: 55,
-    TOKEN_EOF: 56,
+    TOKEN_LEFT_PAREN: nextTokenType(),
+    TOKEN_RIGHT_PAREN: nextTokenType(),
+    TOKEN_LEFT_BRACE: nextTokenType(),
+    TOKEN_RIGHT_BRACE: nextTokenType(),
+    TOKEN_COMMA: nextTokenType(),
+    TOKEN_DOT: nextTokenType(),
+    TOKEN_MINUS: nextTokenType(),
+    TOKEN_PLUS: nextTokenType(),
+    TOKEN_PLUS_PLUS: nextTokenType(),
+    TOKEN_MINUS_MINUS: nextTokenType(),
+    TOKEN_SEMICOLON: nextTokenType(),
+    TOKEN_SLASH: nextTokenType(),
+    TOKEN_STAR: nextTokenType(),
+    TOKEN_QMARK: nextTokenType(),
+    TOKEN_COLON: nextTokenType(),
+    TOKEN_BANG: nextTokenType(),
+    TOKEN_BANG_EQUAL: nextTokenType(),
+    TOKEN_EQUAL: nextTokenType(),
+    TOKEN_EQUAL_EQUAL: nextTokenType(),
+    TOKEN_GREATER: nextTokenType(),
+    TOKEN_GREATER_EQUAL: nextTokenType(),
+    TOKEN_LESS: nextTokenType(),
+    TOKEN_LESS_EQUAL: nextTokenType(),
+    TOKEN_FORWARD: nextTokenType(),
+    TOKEN_PLUS_EQUAL: nextTokenType(),
+    TOKEN_MINUS_EQUAL: nextTokenType(),
+    TOKEN_STAR_EQUAL: nextTokenType(),
+    TOKEN_SLASH_EQUAL: nextTokenType(),
+    TOKEN_LEFT_BRACKET: nextTokenType(),
+    TOKEN_RIGHT_BRACKET: nextTokenType(),
+    TOKEN_IDENTIFIER: nextTokenType(),
+    TOKEN_STRING: nextTokenType(),
+    TOKEN_NUMBER: nextTokenType(),
+    TOKEN_AND: nextTokenType(),
+    TOKEN_CLASS: nextTokenType(),
+    TOKEN_ELSE: nextTokenType(),
+    TOKEN_FALSE: nextTokenType(),
+    TOKEN_FOR: nextTokenType(),
+    TOKEN_FUNCTION: nextTokenType(),
+    TOKEN_IF: nextTokenType(),
+    TOKEN_NULL: nextTokenType(),
+    TOKEN_OR: nextTokenType(),
+    TOKEN_PRINT: nextTokenType(),
+    TOKEN_RETURN: nextTokenType(),
+    TOKEN_SUPER: nextTokenType(),
+    TOKEN_THIS: nextTokenType(),
+    TOKEN_TRUE: nextTokenType(),
+    TOKEN_VAR: nextTokenType(),
+    TOKEN_WHILE: nextTokenType(),
+    TOKEN_CONST: nextTokenType(),
+    TOKEN_LAMBDA: nextTokenType(),
+    TOKEN_IS: nextTokenType(),
+    TOKEN_NOT: nextTokenType(),
+    TOKEN_STATIC: nextTokenType(),
+    TOKEN_ELIF: nextTokenType(),
+    TOKEN_BREAK: nextTokenType(),
+    TOKEN_CONTINUE: nextTokenType(),
+    TOKEN_USING: nextTokenType(),
+    TOKEN_PROPERTY: nextTokenType(),
+    TOKEN_ERROR: nextTokenType(),
+    TOKEN_EOF: nextTokenType(),
 };
 
 TokenType.boolean = () => [TokenType.TOKEN_TRUE, TokenType.TOKEN_FALSE];
@@ -87,6 +96,8 @@ TokenType.keyword = () => [
     TokenType.TOKEN_CONTINUE,
     TokenType.TOKEN_USING,
     TokenType.TOKEN_PROPERTY,
+    TokenType.TOKEN_IS,
+    TokenType.TOKEN_NOT,
 ];
 
 Object.freeze(TokenType);
@@ -136,8 +147,12 @@ function parse(source) {
     let previousLine = 0;
     let previousStart = 0;
     let previousLineStart = 0;
-    const natives = ['getTime', 'write', 'writeln', 'readln', 'number'];
-    const symbols = Object.fromEntries(natives.map((name) => [name, 'function']));
+    const natives = ['getTime', 'write', 'writeln', 'readln', 'number', 'array', 'type', 'length'];
+    const types = ['Number', 'Bool', 'Null', 'String', 'Array', 'Function', 'Type'];
+    let symbols = Object.fromEntries(natives.map((name) => [name, 'function']));
+    for (const type of types) {
+        symbols[type] = 'class';
+    }
     let previous = null;
     let inArgList = false;
 

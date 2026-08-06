@@ -166,6 +166,8 @@ static TokenType identifierType() {
 				return TOKEN_IF;
 			if (memcmp(scanner.start, "or", 2) == 0)
 				return TOKEN_OR;
+			if (memcmp(scanner.start, "is", 2) == 0)
+				return TOKEN_IS;
 			break;
 
 		case 3:
@@ -175,6 +177,8 @@ static TokenType identifierType() {
 				return TOKEN_FOR;
 			if (memcmp(scanner.start, "var", 3) == 0)
 				return TOKEN_VAR;
+			if (memcmp(scanner.start, "not", 3) == 0)
+				return TOKEN_NOT;
 			break;
 
 		case 4:
@@ -283,6 +287,12 @@ Token scan() {
 			return makeToken(TOKEN_COMMA);
 		case '.':
 			return makeToken(TOKEN_DOT);
+		case '?':
+			return makeToken(TOKEN_QMARK);
+		case ':':
+			return makeToken(TOKEN_COLON);
+		case '%':
+			return makeToken(TOKEN_MODULO);
 
 		case '+':
 			return MAKE_MATCHING_3('+', '=', TOKEN_PLUS_PLUS, TOKEN_PLUS_EQUAL, TOKEN_PLUS);

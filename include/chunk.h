@@ -17,6 +17,7 @@ typedef enum Opcode
 	OP_SUBTRACT,
 	OP_MULTIPLY,
 	OP_DIVIDE,
+	OP_MODULO,
 
 	OP_NULL,
 	OP_TRUE,
@@ -26,6 +27,7 @@ typedef enum Opcode
 	OP_EQUAL,
 	OP_GREATER,
 	OP_LESS,
+	OP_IS,
 
 	OP_ARRAY,
 	OP_INDEX_GET,
@@ -39,6 +41,10 @@ typedef enum Opcode
 	OP_GET_GLOBAL,
 	OP_SET_GLOBAL,
 
+	OP_CLOSE_UPVALUE,
+	OP_GET_UPVALUE,
+	OP_SET_UPVALUE,
+
 	OP_GET_LOCAL,
 	OP_SET_LOCAL,
 
@@ -46,8 +52,10 @@ typedef enum Opcode
 	OP_LOOP,
 	OP_JUMP_IF_TRUE,
 	OP_JUMP_IF_FALSE,
+	OP_CONDITIONAL,
 
 	OP_CALL,
+	OP_CLOSURE,
 	OP_RETURN,
 } Opcode;
 

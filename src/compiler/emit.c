@@ -23,19 +23,41 @@ void emitN(size_t n, ...) {
 	va_end(args); // Cleanup
 }
 
-// emit a constant
-int emitConstant(Value value) {
+int makeConstant(Value value) {
 	Opcode opcode = OP_CONSTANT_8;
 	int constant = addConstant(currentChunk(), value);
 	if (constant > BYTE_MAX) {
 		opcode = OP_CONSTANT_24;
 	}
-	else if (constant > 3 * BYTE_MAX) {
+	else if (constant > BYTE_MAX * BYTE_MAX * BYTE_MAX) {
 		error("Too many constants in one chunk.");
 		return -1;
 	}
+	// how do we know if it fits in a byte?
+	// return the constant (it will fit into 3 bytes) and shift the opcode
+	int data = (constant & 0x00ffffff) | ((int) opcode << 24);
+	return data;
+}
 
-	emitBytes(opcode, (byte) constant);
+// emit a constant
+int emitConstant(Value value) {
+	int res = makeConstant(value);
+	Opcode opcode = OPCODE(res);
+	int constant = CONSTANT(res);
+
+	if (opcode == OP_CONSTANT_8) {
+		emitBytes(opcode, (byte) constant);
+	}
+	else {
+		printf("c24 for value: ");
+		printValue(value, "\n");
+		error("Support for more than 255 constants removed.");
+		return -1;
+		emitByte(opcode);
+		emitByte((byte) (constant >> 16) & BYTE_MAX);
+		emitByte((byte) (constant >> 8) & BYTE_MAX);
+		emitByte((byte) (constant >> 0) & BYTE_MAX);
+	}
 	return constant;
 }
 

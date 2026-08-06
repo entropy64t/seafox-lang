@@ -139,7 +139,9 @@ static void forStatement() {
 
 	statement();
 
+#ifdef DEBUG_PRINT_CODE
 	disassembleChunk(&increment, "FOR INCREMENT");
+#endif
 
 	appendChunk(currentChunk(), &increment);
 

@@ -17,7 +17,7 @@ typedef enum InterpretResult
 
 typedef struct CallFrame
 {
-	ObjFunction* function;
+	ObjClosure* closure;
 	byte* ip;
 	Value* slots;
 } CallFrame;
@@ -33,6 +33,7 @@ typedef struct VM
 	Value stack[STACK_MAX];
 	Value* stackTop;
 	Object* objects;
+	ObjUpvalue* openUpvalues;
 
 	HashTable strings;
 	HashTable globals;

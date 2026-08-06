@@ -19,3 +19,11 @@ bool readlnNative(int argCount, Value* args, Value* out);
 bool arrayNative(int argCount, Value* args, Value* out);
 
 NATIVE(number);
+
+NATIVE(length);
+
+NATIVE(type);
+
+NATIVE(makeType);
+
+NATIVE(string);

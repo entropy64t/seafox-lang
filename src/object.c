@@ -7,6 +7,22 @@
 #include "vm.h"
 #include "hashtable.h"
 
+const char* types[VALUE_TYPE_COUNT] = {
+	[VAL_BOOL] = "Bool",
+	[VAL_NUMBER] = "Number",
+	[VAL_NULL] = "Null",
+	[VAL_OBJECT] = "Object"};
+
+const char* objtypes[OBJ_TYPE_COUNT] = {
+	[OBJ_STRING] = "String",
+	[OBJ_ARRAY] = "Array",
+	[OBJ_FUNCTION] = "Function",
+	[OBJ_NATIVE_FN] = "Native Function",
+	[OBJ_CLOSURE] = "Closure",
+	[OBJ_UPVALUE] = "Upvalue",
+	[OBJ_SEAFOX_TYPE] = "Type",
+};
+
 static Object* allocateObject(size_t size, ObjectType type) {
 	Object* object = (Object*) reallocate(NULL, 0, size);
 	object->type = type;
@@ -93,19 +109,81 @@ ObjArray* newArray(int length) {
 ObjFunction* newFunction() {
 	ObjFunction* function = ALLOCATE_OBJ(ObjFunction, OBJ_FUNCTION);
 	function->arity = 0;
+	function->defaultsCount = 0;
+	function->upvalueCount = 0;
 	function->name = NULL;
 	initChunk(&function->chunk);
 	return function;
 }
 
+ObjUpvalue* newUpvalue(Value* slot) {
+	ObjUpvalue* upvalue = ALLOCATE_OBJ(ObjUpvalue, OBJ_UPVALUE);
+	upvalue->closed = NULL_VAL;
+	upvalue->location = slot;
+	upvalue->next = NULL;
+	return upvalue;
+}
+
+ObjClosure* newClosure(ObjFunction* function) {
+	ObjUpvalue** upvalues = ALLOCATE(ObjUpvalue*, function->upvalueCount);
+	for (int i = 0; i < function->upvalueCount; i++) {
+		upvalues[i] = NULL;
+	}
+
+	ObjClosure* closure = ALLOCATE_OBJ(ObjClosure, OBJ_CLOSURE);
+	closure->function = function;
+	closure->upvalues = upvalues;
+	closure->upvalueCount = function->upvalueCount;
+
+	return closure;
+}
+
+ObjSeafoxType* newType(char* name, ValueType value, ObjectType object) {
+	ObjSeafoxType* type = ALLOCATE_OBJ(ObjSeafoxType, OBJ_SEAFOX_TYPE);
+	type->value = value;
+	type->object = object;
+	type->name = copyString(name, (int) strlen(name));
+	return type;
+}
+
+Value seafoxType(Value value) {
+	ValueType valueType = value.type;
+	ObjectType objType = OBJ_TYPE_COUNT;
+	if (IS_OBJECT(value)) {
+		objType = OBJ_TYPE(value);
+	}
+	if (objType == OBJ_CLOSURE || objType == OBJ_NATIVE_FN)
+		objType = OBJ_FUNCTION;
+	if (objType == OBJ_UPVALUE) {
+		return seafoxType(*AS_UPVALUE(value)->location);
+	}
+	char* name = types[valueType];
+	if (objType != OBJ_TYPE_COUNT)
+		name = objtypes[objType];
+
+	return OBJ_VAL(newType(name, valueType, objType));
+	// TODO this is most of the time unnecesarily slow
+	// because for 'is' the type name does not matter
+}
+
+bool typesEqual(Value a, Value b) {
+	ObjSeafoxType* t1 = AS_SEAFOX_TYPE(a);
+	if (!IS_SEAFOX_TYPE(b) && IS_NULL(b)) {
+		return t1->value != VAL_NULL;
+	}
+	ObjSeafoxType* t2 = AS_SEAFOX_TYPE(b);
+	return t1->value == t2->value && t1->object == t2->object;
+	// TODO should types check their names?
+}
+
 static void fprintArray(FILE* file, ObjArray* array) {
-	fprintf(file, "{ ");
+	fprintf(file, "[");
 
 	for (int i = 0; i < array->length - 1; i++) {
 		fprintValue(file, array->items[i], ", ");
 	}
-	fprintValue(file, array->items[array->length - 1], " ");
-	fprintf(file, "}");
+	fprintValue(file, array->items[array->length - 1], "");
+	fprintf(file, "]");
 }
 
 static void fprintFunction(FILE* file, ObjFunction* function) {
@@ -127,8 +205,19 @@ void fprintObject(FILE* file, Value value) {
 		case OBJ_FUNCTION:
 			fprintFunction(file, AS_FUNCTION(value));
 			break;
+		case OBJ_UPVALUE:
+			fprintf(file, "upvalue");
+			break;
+		case OBJ_CLOSURE:
+			fprintFunction(file, AS_CLOSURE(value)->function);
+			break;
 		case OBJ_NATIVE_FN:
 			fprintf(file, "<native function %s>", AS_NATIVE(value)->name);
+			break;
+		case OBJ_SEAFOX_TYPE:
+			ObjString* name = AS_SEAFOX_TYPE(value)->name;
+			fprintf(file, "<type %.*s>", name->length, name->chars);
+			break;
 	}
 }
 

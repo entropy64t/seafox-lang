@@ -81,18 +81,17 @@ static void string(bool canAssign) {
 static void array(bool canAssign) {
 	debugLog("array()");
 	int length = 0;
-	while (parser.current.type != TOKEN_RIGHT_BRACE) {
+	while (parser.current.type != TOKEN_RIGHT_BRACKET) {
 		expression();
-		if (parser.current.type != TOKEN_RIGHT_BRACE) {
+		if (parser.current.type != TOKEN_RIGHT_BRACKET) {
 			consume(TOKEN_COMMA, "Expected ',' between array values");
 		}
 		length++;
 	}
-	consume(TOKEN_RIGHT_BRACE, "Expected '}' after array declaration");
+	consume(TOKEN_RIGHT_BRACKET, "Expected ']' after array declaration");
 
 	emitArray(length);
 	debugUnlog();
-	// emitConstant(OBJ_VAL(copyArray(arr, length - offs)));
 }
 
 // parse a literal [true/false/null]
@@ -150,6 +149,11 @@ static void unary(bool canAssign) {
 static void binary(bool canAssign) {
 	debugLog("binary()");
 	TokenType operatorType = parser.previous.type;
+	bool isNot = false;
+	if (operatorType == TOKEN_IS) {
+		if (match(TOKEN_NOT))
+			isNot = true;
+	}
 	ParseRule* rule = getRule(operatorType);
 	parse((Precedence) (rule->precedence + 1));
 
@@ -185,6 +189,14 @@ static void binary(bool canAssign) {
 			break;
 		case TOKEN_LESS_EQUAL:
 			emitBytes(OP_GREATER, OP_NOT);
+			break;
+		case TOKEN_IS:
+			emitByte(OP_IS);
+			if (isNot)
+				emitByte(OP_NOT);
+			break;
+		case TOKEN_MODULO:
+			emitByte(OP_MODULO);
 			break;
 		default:
 			return; // Unreachable.
@@ -261,11 +273,27 @@ static void call(bool canAssign) {
 	emitBytes(OP_CALL, argCount);
 }
 
+static void ternary(bool canAssign) {
+	debugLog("ternary()");
+	TokenType operatorType = parser.previous.type;
+	ParseRule* rule = getRule(operatorType);
+	parse((Precedence) (rule->precedence + 1));
+	consume(TOKEN_COLON, "Expected ':' between ternary operator expressions.");
+	parse((Precedence) (rule->precedence + 1));
+
+	if (operatorType != TOKEN_QMARK) {
+		error("Unsupported ternary operator");
+		return;
+	}
+
+	emitByte(OP_CONDITIONAL);
+}
+
 // pratt table : BEGIN
 ParseRule rules[] = {
 	[TOKEN_LEFT_PAREN] = {grouping, call, NULL, PREC_CALL},
 	[TOKEN_RIGHT_PAREN] = {NULL, NULL, NULL, PREC_NONE},
-	[TOKEN_LEFT_BRACE] = {array, NULL, NULL, PREC_NONE},
+	[TOKEN_LEFT_BRACE] = {NULL, NULL, NULL, PREC_NONE},
 	[TOKEN_RIGHT_BRACE] = {NULL, NULL, NULL, PREC_NONE},
 	[TOKEN_COMMA] = {NULL, NULL, NULL, PREC_NONE},
 	[TOKEN_DOT] = {NULL, NULL, NULL, PREC_NONE},
@@ -276,6 +304,8 @@ ParseRule rules[] = {
 	[TOKEN_SEMICOLON] = {NULL, NULL, NULL, PREC_NONE},
 	[TOKEN_SLASH] = {NULL, binary, NULL, PREC_FACTOR},
 	[TOKEN_STAR] = {NULL, binary, NULL, PREC_FACTOR},
+	[TOKEN_QMARK] = {NULL, ternary, NULL, PREC_TERANRY},
+	[TOKEN_MODULO] = {NULL, binary, NULL, PREC_TERM},
 	[TOKEN_BANG] = {unary, NULL, NULL, PREC_NONE},
 	[TOKEN_BANG_EQUAL] = {NULL, binary, NULL, PREC_EQUALITY},
 	[TOKEN_EQUAL] = {NULL, NULL, NULL, PREC_NONE},
@@ -288,7 +318,7 @@ ParseRule rules[] = {
 	[TOKEN_MINUS_EQUAL] = {NULL, NULL, NULL, PREC_NONE},
 	[TOKEN_STAR_EQUAL] = {NULL, NULL, NULL, PREC_NONE},
 	[TOKEN_SLASH_EQUAL] = {NULL, NULL, NULL, PREC_NONE},
-	[TOKEN_LEFT_BRACKET] = {NULL, indexAccess, NULL, PREC_CALL},
+	[TOKEN_LEFT_BRACKET] = {array, indexAccess, NULL, PREC_CALL},
 	[TOKEN_RIGHT_BRACKET] = {NULL, NULL, NULL, PREC_NONE},
 	[TOKEN_IDENTIFIER] = {variable, NULL, NULL, PREC_NONE},
 	[TOKEN_STRING] = {string, NULL, NULL, PREC_NONE},
@@ -309,6 +339,7 @@ ParseRule rules[] = {
 	[TOKEN_THIS] = {NULL, NULL, NULL, PREC_NONE},
 	[TOKEN_TRUE] = {literal, NULL, NULL, PREC_NONE},
 	[TOKEN_VAR] = {NULL, NULL, NULL, PREC_NONE},
+	[TOKEN_IS] = {NULL, binary, NULL, PREC_EQUALITY},
 	[TOKEN_WHILE] = {NULL, NULL, NULL, PREC_NONE},
 	[TOKEN_STATIC] = {NULL, NULL, NULL, PREC_NONE},
 	[TOKEN_ELIF] = {NULL, NULL, NULL, PREC_NONE},
