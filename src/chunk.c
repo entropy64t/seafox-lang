@@ -82,6 +82,10 @@ void appendChunk(Chunk* target, const Chunk* source) {
 			case OP_DEFINE_GLOBAL:
 			case OP_GET_GLOBAL:
 			case OP_SET_GLOBAL:
+				writeChunk(target, source->code[i + 1] + constantOffset, getLine(source, i + 1));
+				i += 2;
+				break;
+
 			case OP_GET_LOCAL:
 			case OP_SET_LOCAL:
 			case OP_CALL:

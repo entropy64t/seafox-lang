@@ -1,7 +1,64 @@
-{
-    for (var i = 0; i < 10; i++) {
-        var t = i * 2;
-        print t;
+function list(capacity) {
+    if (capacity <= 0) capacity = 8;
+    var _arr = Array(capacity);
+    var _capacity = capacity;
+    var _count = 0;
+
+    function add(const v) {
+        if (_count == _capacity) {
+            var new = Array(_capacity * 2);
+            for (var i = 0; i < _count; i++) {
+                new[i] = _arr[i];
+            }
+            _arr = new;
+            _capacity *= 2;
+        }
+
+        _arr[_count] = v;
+        _count++;
     }
-    print "done";
+
+    function get() {
+        var items = Array(_count);
+        for (var i = 0; i < _count; i++) items[i] = _arr[i];
+        return items;
+    }
+
+    function iterator() {
+        return Iterator(get());
+    }
+
+    return [ get, add, iterator ];
+}
+
+var arr = [1, 2, 3];
+var iter = Iterator(arr);
+print *iter;
+iter = next(iter);
+print *iter;
+var it = begin(arr);
+while (!isEnd(it)) {
+    print *it;
+    it = next(it);
+}
+
+var list1 = list(16);
+var get = list1[0];
+var add = list1[1];
+var iterator = list1[2];
+
+add(5);
+add(6);
+print get();
+for (var i = 0; i < 20; i++) add(i);
+print get();
+
+var it = iterator();
+print *it;
+it = next(it);
+print *it;
+
+for (var i = iterator(); !isEnd(i); i = next(i)) {
+    write(*i);
+    write(",");
 }

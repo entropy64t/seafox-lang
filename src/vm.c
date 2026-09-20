@@ -336,17 +336,17 @@ static InterpretResult run() {
 #define READ_UINT32() ((uint32_t) (((uint32_t) READ_UINT24() << 8) | (uint32_t) READ_BYTE()))
 #define READ_CONSTANT() (frame->closure->function->chunk.constants.values[READ_BYTE()])
 #define READ_CONSTANT_LONG() (frame->closure->function->chunk.constants.values[READ_UINT24()])
-#define BINARY_OP(valueType, op)                                                     \
-	do {                                                                             \
-		if (!IS_NUMBER(peek(0)) || !IS_NUMBER(peek(1))) {                            \
-			Value v1 = peek(1);                                                      \
-			Value v2 = peek(0);                                                      \
-			runtimeError("Both operands must be numbers, not %T and %T.", &v1, &v2); \
-			return INTERPRET_RUNTIME_ERROR;                                          \
-		}                                                                            \
-		double b = AS_NUMBER(pop());                                                 \
-		double a = AS_NUMBER(pop());                                                 \
-		push(valueType(a op b));                                                     \
+#define BINARY_OP(valueType, op)                                                                \
+	do {                                                                                        \
+		if (!IS_NUMBER(peek(0)) || !IS_NUMBER(peek(1))) {                                       \
+			Value v1 = peek(1);                                                                 \
+			Value v2 = peek(0);                                                                 \
+			runtimeError("'" #op "': Both operands must be numbers, not %T and %T.", &v1, &v2); \
+			return INTERPRET_RUNTIME_ERROR;                                                     \
+		}                                                                                       \
+		double b = AS_NUMBER(pop());                                                            \
+		double a = AS_NUMBER(pop());                                                            \
+		push(valueType(a op b));                                                                \
 	} while (false)
 #define READ_STRING() AS_STRING(READ_CONSTANT())
 
@@ -456,6 +456,19 @@ static InterpretResult run() {
 			case OP_INDEX_SET:
 				if (!indexSet())
 					return INTERPRET_RUNTIME_ERROR;
+				break;
+			case OP_ITERATOR_GET:
+				Value val = pop();
+				if (!IS_ITERATOR(val)) {
+					runtimeError("Expected an iterator, got %T.", &val);
+					return INTERPRET_RUNTIME_ERROR;
+				}
+				ObjIterator* iter = AS_ITERATOR(val);
+				if (iter->pointer - iter->container->items >= iter->container->length) {
+					runtimeError("Cannot dereference a past-end iterator.");
+					return INTERPRET_RUNTIME_ERROR;
+				}
+				push(*iter->pointer);
 				break;
 			case OP_PRINT:
 				printValue(pop(), "\n");
@@ -645,6 +658,9 @@ void initVM() {
 	defineNative("type", typeNative, 1);
 	ObjNativeFn* makeType = defineNative("", makeTypeNative, 2);
 	ObjNativeFn* string = defineNative("string", stringNative, 1);
+	ObjNativeFn* iterator = defineNative("begin", iteratorNative, 1);
+	defineNative("next", nextNative, 1);
+	defineNative("isEnd", isEndNative, 1);
 
 	defineValueType("Number", VAL_NUMBER, number);
 	defineValueType("Bool", VAL_BOOL, NULL);
@@ -653,6 +669,7 @@ void initVM() {
 	defineObjectType("Array", OBJ_ARRAY, array);
 	defineObjectType("Function", OBJ_FUNCTION, NULL);
 	defineObjectType("Type", OBJ_SEAFOX_TYPE, makeType);
+	defineObjectType("Iterator", OBJ_ITERATOR, iterator);
 }
 
 void freeVM() {

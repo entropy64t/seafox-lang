@@ -27,3 +27,9 @@ NATIVE(type);
 NATIVE(makeType);
 
 NATIVE(string);
+
+NATIVE(iterator);
+
+NATIVE(next);
+
+NATIVE(isEnd);

@@ -21,6 +21,7 @@ const char* objtypes[OBJ_TYPE_COUNT] = {
 	[OBJ_CLOSURE] = "Closure",
 	[OBJ_UPVALUE] = "Upvalue",
 	[OBJ_SEAFOX_TYPE] = "Type",
+	[OBJ_ITERATOR] = "Iterator",
 };
 
 static Object* allocateObject(size_t size, ObjectType type) {
@@ -218,6 +219,9 @@ void fprintObject(FILE* file, Value value) {
 			ObjString* name = AS_SEAFOX_TYPE(value)->name;
 			fprintf(file, "<type %.*s>", name->length, name->chars);
 			break;
+		case OBJ_ITERATOR:
+			fprintf(file, "<iterator>");
+			break;
 	}
 }
 
@@ -231,4 +235,17 @@ ObjNativeFn* newNativeFn(NativeFn function, const char* name, int arity) {
 	native->name = name;
 	native->arity = arity;
 	return native;
+}
+
+ObjIterator* makeIterator(ObjArray* container) {
+	ObjIterator* iter = ALLOCATE_OBJ(ObjIterator, OBJ_ITERATOR);
+	iter->pointer = container->items;
+	iter->container = container;
+	return iter;
+}
+
+ObjIterator* incrementIterator(ObjIterator* source) {
+	ObjIterator* next = makeIterator(source->container);
+	next->pointer = source->pointer + 1;
+	return next;
 }

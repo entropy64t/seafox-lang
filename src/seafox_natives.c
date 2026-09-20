@@ -137,3 +137,43 @@ bool stringNative(int argCount, Value* args, Value* out) {
 	*out = OBJ_VAL(copyString(chars, strlen(chars)));
 	return true;
 }
+
+bool iteratorNative(int argCount, Value* args, Value* out) {
+	if (!IS_ARRAY(args[0])) {
+		*out = NULL_VAL;
+		TYPE_ERROR("Iterator", "Array", 1);
+		return false;
+	}
+	*out = OBJ_VAL(makeIterator(AS_ARRAY(args[0])));
+	return true;
+}
+
+bool nextNative(int argCount, Value* args, Value* out) {
+	if (!IS_ITERATOR(args[0])) {
+		*out = NULL_VAL;
+		TYPE_ERROR("next", "Iterator", 1);
+		return false;
+	}
+
+	ObjIterator* current = AS_ITERATOR(args[0]);
+	ObjIterator* next = incrementIterator(current);
+	int currentIndex = current->pointer - current->container->items;
+	if (currentIndex >= current->container->length) {
+		*out = NULL_VAL;
+		runtimeError("next(): Cannot increment a past-end iterator");
+		return false;
+	}
+	*out = OBJ_VAL(next);
+	return true;
+}
+
+bool isEndNative(int argCount, Value* args, Value* out) {
+	if (!IS_ITERATOR(args[0])) {
+		*out = NULL_VAL;
+		TYPE_ERROR("isEnd", "Iterator", 1);
+		return false;
+	}
+	ObjIterator* it = AS_ITERATOR(args[0]);
+	*out = BOOL_VAL(it->pointer - it->container->items == it->container->length);
+	return true;
+}

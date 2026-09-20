@@ -123,18 +123,15 @@ static void forStatement() {
 
 	int exitJump = forCondition();
 
-	// THIS IS NOT SAFE, AVOID IT
-	// it is used here to swap chunks, so that for loops have less jump instructions
-
-	// 0. Capture current chunk by value
+	// Compile the increment separately so it runs after the body and before the
+	// next condition check.
 	Chunk enclosing = *currentChunk();
+	Chunk incrementChunk;
+	initChunk(&incrementChunk);
+	current->function->chunk = incrementChunk;
 
-	// 1. Clear current chunk
-	initChunk(&current->function->chunk);
 	loopStart = forIncrement(loopStart);
-	// 2. Capture the chunk with for increment by value
 	Chunk increment = *currentChunk();
-	// 3. Restore the previous chunk
 	current->function->chunk = enclosing;
 
 	statement();
@@ -144,6 +141,7 @@ static void forStatement() {
 #endif
 
 	appendChunk(currentChunk(), &increment);
+	freeChunk(&increment);
 
 	emitLoop(loopStart);
 

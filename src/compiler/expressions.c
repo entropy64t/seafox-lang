@@ -139,6 +139,9 @@ static void unary(bool canAssign) {
 		case TOKEN_BANG:
 			emitByte(OP_NOT);
 			break;
+		case TOKEN_STAR:
+			emitByte(OP_ITERATOR_GET);
+			break;
 		default:
 			return; // Unreachable.
 	}
@@ -303,7 +306,7 @@ ParseRule rules[] = {
 	[TOKEN_MINUS_MINUS] = {NULL, NULL, NULL, PREC_NONE},
 	[TOKEN_SEMICOLON] = {NULL, NULL, NULL, PREC_NONE},
 	[TOKEN_SLASH] = {NULL, binary, NULL, PREC_FACTOR},
-	[TOKEN_STAR] = {NULL, binary, NULL, PREC_FACTOR},
+	[TOKEN_STAR] = {unary, binary, NULL, PREC_FACTOR},
 	[TOKEN_QMARK] = {NULL, ternary, NULL, PREC_TERANRY},
 	[TOKEN_MODULO] = {NULL, binary, NULL, PREC_TERM},
 	[TOKEN_BANG] = {unary, NULL, NULL, PREC_NONE},

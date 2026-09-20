@@ -33,6 +33,8 @@ typedef enum Opcode
 	OP_INDEX_GET,
 	OP_INDEX_SET,
 
+	OP_ITERATOR_GET,
+
 	OP_PRINT,
 
 	OP_POP,

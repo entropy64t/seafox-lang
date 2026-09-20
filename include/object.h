@@ -14,6 +14,7 @@ typedef enum ObjectType
 	OBJ_CLOSURE,
 	OBJ_UPVALUE,
 	OBJ_SEAFOX_TYPE,
+	OBJ_ITERATOR,
 	OBJ_TYPE_COUNT
 } ObjectType;
 
@@ -82,6 +83,13 @@ typedef struct ObjSeafoxType
 	ObjNativeFn* function; // this gets called when doing Type()
 } ObjSeafoxType;
 
+typedef struct ObjIterator
+{
+	Object obj;
+	Value* pointer;
+	ObjArray* container;
+} ObjIterator;
+
 extern const char* types[VALUE_TYPE_COUNT];
 extern const char* objtypes[OBJ_TYPE_COUNT];
 
@@ -96,6 +104,7 @@ static inline bool isObjType(Value value, ObjectType type) {
 #define IS_NATIVE(value) isObjType(value, OBJ_NATIVE_FN)
 #define IS_CLOSURE(value) isObjType(value, OBJ_CLOSURE)
 #define IS_SEAFOX_TYPE(value) isObjType(value, OBJ_SEAFOX_TYPE)
+#define IS_ITERATOR(value) isObjType(value, OBJ_ITERATOR)
 
 #define AS_STRING(value) ((ObjString*) AS_OBJECT(value))
 #define AS_CSTRING(value) (((ObjString*) AS_OBJECT(value))->chars)
@@ -105,6 +114,7 @@ static inline bool isObjType(Value value, ObjectType type) {
 #define AS_UPVALUE(value) ((ObjUpvalue*) AS_OBJECT(value))
 #define AS_CLOSURE(value) ((ObjClosure*) AS_OBJECT(value))
 #define AS_SEAFOX_TYPE(value) ((ObjSeafoxType*) AS_OBJECT(value))
+#define AS_ITERATOR(value) ((ObjIterator*) AS_OBJECT(value))
 
 ObjString* copyString(char* chars, int length);
 ObjString* takeString(char* chars, int length);
@@ -116,6 +126,8 @@ ObjNativeFn* newNativeFn(NativeFn function, const char* name, int arity);
 ObjUpvalue* newUpvalue(Value* slot);
 ObjClosure* newClosure(ObjFunction* function);
 ObjSeafoxType* newType(char* name, ValueType value, ObjectType obj);
+ObjIterator* makeIterator(ObjArray* container);
+ObjIterator* incrementIterator(ObjIterator* source);
 Value seafoxType(Value value);
 void fprintObject(FILE* file, Value value);
 void printObject(Value value);
