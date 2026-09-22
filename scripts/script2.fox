@@ -62,3 +62,8 @@ for (var i = iterator(); !isEnd(i); i = next(i)) {
     write(*i);
     write(",");
 }
+
+var str = "orange fox jumps";
+for (var i = Iterator(str); !isEnd(i); i = next(i)) {
+    writeln(*i);
+}

@@ -2,7 +2,7 @@
     "name": "seafox",
     "displayName": "seafox",
     "description": "Syntax highlighting for seafox",
-    "version": "0.1.0",
+    "version": "0.1.1",
     "publisher": "entropy64t",
     "engines": {
         "vscode": "^1.80.0"

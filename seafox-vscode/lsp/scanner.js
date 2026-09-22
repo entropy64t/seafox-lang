@@ -147,8 +147,8 @@ function parse(source) {
     let previousLine = 0;
     let previousStart = 0;
     let previousLineStart = 0;
-    const natives = ['getTime', 'write', 'writeln', 'readln', 'number', 'array', 'type', 'length'];
-    const types = ['Number', 'Bool', 'Null', 'String', 'Array', 'Function', 'Type'];
+    const natives = ['getTime', 'write', 'writeln', 'readln', 'number', 'array', 'type', 'length', 'isEnd', 'next', 'begin'];
+    const types = ['Number', 'Bool', 'Null', 'String', 'Array', 'Function', 'Type', 'Iterator'];
     let symbols = Object.fromEntries(natives.map((name) => [name, 'function']));
     for (const type of types) {
         symbols[type] = 'class';

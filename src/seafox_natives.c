@@ -139,6 +139,21 @@ bool stringNative(int argCount, Value* args, Value* out) {
 }
 
 bool iteratorNative(int argCount, Value* args, Value* out) {
+	if (IS_STRING(args[0])) {
+		ObjString* str = AS_STRING(args[0]);
+		ObjArray* arr = newArray(str->length);
+		push(OBJ_VAL(arr)); // make the GC know about the array
+		for (int i = 0; i < str->length; i++) {
+			char chars[2];
+			chars[0] = str->chars[i];
+			chars[1] = '\0';
+			arr->items[i] = OBJ_VAL(copyString(chars, 2));
+			// the GC is insta aware of these strings as they are reachable from the arr
+		}
+		pop(); // pop the array
+		*out = OBJ_VAL(makeIterator(arr));
+		return true;
+	}
 	if (!IS_ARRAY(args[0])) {
 		*out = NULL_VAL;
 		TYPE_ERROR("Iterator", "Array", 1);
