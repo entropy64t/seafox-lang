@@ -8,5 +8,5 @@ build
 *.so
 scanner_bridge
 *.vsix
-util/
-scripts/
+util
+scripts

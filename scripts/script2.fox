@@ -67,3 +67,12 @@ var str = "orange fox jumps";
 for (var i = Iterator(str); !isEnd(i); i = next(i)) {
     writeln(*i);
 }
+
+/*
+is the var required? in c++ it is so yeah it is required
+foreach (var ID in expression)
+==
+for (var $ID = Iterator(expression); !isEnd($ID); $ID = next($ID)) {
+    var ID = $ID;
+} 
+*/
