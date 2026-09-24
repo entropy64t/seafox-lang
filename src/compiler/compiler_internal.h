@@ -150,6 +150,8 @@ int makeConstant(Value value);
 // emit a constant
 int emitConstant(Value value);
 
+void emitReturn();
+
 // emit op to create an array
 void emitArray(int length);
 
