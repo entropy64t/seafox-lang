@@ -9,6 +9,8 @@
 #include "value.h"
 #include "object.h"
 #include "hashtable.h"
+#include "fox_memory.h"
+#include "vm.h"
 
 #ifdef DEBUG_PRINT_CODE
 #include "debug.h"
@@ -87,6 +89,7 @@ ObjFunction* compile(const char* source) {
 	initScanner(source);
 	Compiler compiler;
 	initCompiler(&compiler, TYPE_SCRIPT);
+	push(OBJ_VAL(compiler.function));
 
 	parser.hadError = false;
 	parser.panicMode = false;
@@ -96,11 +99,28 @@ ObjFunction* compile(const char* source) {
 	while (!match(TOKEN_EOF)) {
 		declaration();
 	}
-	//while (parser.current.type != TOKEN_EOF) {
-	//expression();
-	//}
 
 	consume(TOKEN_EOF, "Expected end of program");
 
-	return parser.hadError ? NULL : endCompiler();
+	if (parser.hadError) {
+		pop();
+		return NULL;
+	}
+	ObjFunction* function = endCompiler();
+	return function;
+}
+
+void markCompilerRoots() {
+	Compiler* compiler = current;
+	while (compiler != NULL) {
+		markObject((Object*) compiler->function);
+		markTable(&compiler->constantNames);
+		compiler = compiler->enclosing;
+	}
+
+	if (current != NULL) {
+		for (Object* object = vm.objects; object != NULL; object = object->next) {
+			markObject(object);
+		}
+	}
 }

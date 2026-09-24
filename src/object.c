@@ -27,9 +27,14 @@ const char* objtypes[OBJ_TYPE_COUNT] = {
 static Object* allocateObject(size_t size, ObjectType type) {
 	Object* object = (Object*) reallocate(NULL, 0, size);
 	object->type = type;
+	object->marked = false;
 
 	object->next = vm.objects;
 	vm.objects = object;
+
+#ifdef DEBUG_LOG_GC
+	printf("%p allocate %zu for %d\n", (void*) object, size, type);
+#endif
 
 	return object;
 }
@@ -51,7 +56,10 @@ static ObjString* allocateString(char* chars, int length, uint32_t hash) {
 	string->chars = chars;
 	string->hash = hash;
 
+	// The intern table is weak, and inserting into it can trigger a GC.
+	push(OBJ_VAL(string));
 	tableSet(&vm.strings, string, NULL_VAL); // treat the hash table like a hash set
+	pop();
 
 	return string;
 }
@@ -242,10 +250,4 @@ ObjIterator* makeIterator(ObjArray* container) {
 	iter->pointer = container->items;
 	iter->container = container;
 	return iter;
-}
-
-ObjIterator* incrementIterator(ObjIterator* source) {
-	ObjIterator* next = makeIterator(source->container);
-	next->pointer = source->pointer + 1;
-	return next;
 }

@@ -1,4 +1,5 @@
 #include "compiler_internal.h"
+#include "vm.h"
 
 // emit a variable's name, return its location
 static byte identifierConstant(Token* name) {
@@ -72,7 +73,9 @@ byte parseVariable(bool isConst, const char* errorMessage) {
 	// if it is const then put it in constants names table
 	if (isConst) {
 		ObjString* key = copyString(parser.previous.start, parser.previous.length);
+		push(OBJ_VAL(key));
 		tableSet(&current->constantNames, key, NULL_VAL); // set the variable as a const
+		pop();
 	}
 	if (current->scopeDepth > 0)
 		return 0;

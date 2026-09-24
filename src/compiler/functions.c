@@ -1,8 +1,11 @@
 #include "compiler_internal.h"
 
+#include "vm.h"
+
 void function(FunctionType type) {
 	Compiler compiler;
 	initCompiler(&compiler, type);
+	push(OBJ_VAL(compiler.function));
 	beginScope();
 
 	if (type != TYPE_LAMBDA)
@@ -57,11 +60,13 @@ void function(FunctionType type) {
 	}
 	else {
 		error("Expected a block or expression function body");
+		pop();
 		return; // dont try to compile broken function
 	}
 	ObjFunction* function = endCompiler();
 	emitByte(OP_CLOSURE);
 	emitByte(CONSTANT(makeConstant(OBJ_VAL(function))));
+	pop();
 
 	for (int i = 0; i < function->upvalueCount; i++) {
 		emitByte(compiler.upvalues[i].isLocal ? 1 : 0);

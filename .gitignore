@@ -10,3 +10,6 @@ scanner_bridge
 *.vsix
 util
 scripts
+singlefox
+single_seafox.c
+output

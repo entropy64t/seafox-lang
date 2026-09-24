@@ -22,4 +22,6 @@ void copyTable(HashTable* source, HashTable* dest);
 bool tableSet(HashTable* table, ObjString* key, Value value);
 bool tableGet(HashTable* table, ObjString* key, Value* dest);
 bool tableDelete(HashTable* table, ObjString* key);
+void markTable(HashTable* table);
+void tableRemoveWhite(HashTable* table);
 ObjString* tableFindString(HashTable* table, const char* chars, int length, uint32_t hash);

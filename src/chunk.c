@@ -114,7 +114,9 @@ void appendChunk(Chunk* target, const Chunk* source) {
 }
 
 int addConstant(Chunk* chunk, Value constant) {
+	push(constant);
 	writeValueArr(&chunk->constants, constant);
+	pop();
 	return chunk->constants.count - 1;
 }
 

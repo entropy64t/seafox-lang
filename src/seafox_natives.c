@@ -3,6 +3,7 @@
 #include "object.h"
 #include "vm.h"
 #include <stdlib.h>
+#include <time.h>
 
 #define TYPE_ERROR(fn, expected, at) runtimeError(fn "(): argument " #at ": expected " expected ", got %T", &args[at - 1]);
 
@@ -150,8 +151,8 @@ bool iteratorNative(int argCount, Value* args, Value* out) {
 			arr->items[i] = OBJ_VAL(copyString(chars, 2));
 			// the GC is insta aware of these strings as they are reachable from the arr
 		}
-		pop(); // pop the array
 		*out = OBJ_VAL(makeIterator(arr));
+		pop(); // pop the array
 		return true;
 	}
 	if (!IS_ARRAY(args[0])) {
@@ -171,14 +172,14 @@ bool nextNative(int argCount, Value* args, Value* out) {
 	}
 
 	ObjIterator* current = AS_ITERATOR(args[0]);
-	ObjIterator* next = incrementIterator(current);
 	int currentIndex = current->pointer - current->container->items;
 	if (currentIndex >= current->container->length) {
 		*out = NULL_VAL;
 		runtimeError("next(): Cannot increment a past-end iterator");
 		return false;
 	}
-	*out = OBJ_VAL(next);
+	current->pointer++;
+	*out = OBJ_VAL(current);
 	return true;
 }
 

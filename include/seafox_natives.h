@@ -1,8 +1,5 @@
 #pragma once
 
-#include <stdio.h>
-#include <time.h>
-
 #include "value.h"
 #include "object.h"
 

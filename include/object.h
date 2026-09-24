@@ -3,7 +3,6 @@
 #include "common.h"
 #include "value.h"
 #include "chunk.h"
-#include <stdio.h>
 
 typedef enum ObjectType
 {
@@ -21,6 +20,7 @@ typedef enum ObjectType
 typedef struct Object
 {
 	ObjectType type;
+	bool marked;
 	Object* next;
 } Object;
 

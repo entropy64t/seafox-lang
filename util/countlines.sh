@@ -5,9 +5,9 @@
 #!/bin/bash
 
 total=0
-find . -type f -name "*.[ch]" | while IFS= read -r file; do
+while IFS= read -r file; do
      count=$(grep -c ^ < "$file")
      echo "$file has $count lines"
-     ((total += count))
-done
+     total=$((total + count))
+done < <(find . -type f -name "*.[ch]")
 echo TOTAL LINES COUNTED:  $total

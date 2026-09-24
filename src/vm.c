@@ -40,6 +40,31 @@ static Value peek(int distance) {
 	return vm.stackTop[-1 - distance];
 }
 
+void runtimeError(const char* format, ...) {
+	va_list args;
+	va_start(args, format);
+	rte(format, args);
+	va_end(args);
+	fputs("\n", stderr);
+
+	for (int i = vm.frameCount - 1; i >= 0; --i) {
+		CallFrame* frame = &vm.frames[i];
+		ObjFunction* function = frame->closure->function;
+		size_t instruction = frame->ip - function->chunk.code - 1;
+
+		int line = getLine(&function->chunk, instruction);
+		fprintf(stderr, "[line %d] in ", line);
+		if (function->name == NULL)
+			fprintf(stderr, "script\n");
+		else
+			fprintf(stderr, "%s()\n", function->name->chars);
+	}
+
+	resetStack();
+}
+
+#pragma region FFI
+
 static ObjNativeFn* defineNative(const char* name, NativeFn function, int arity) {
 	push(OBJ_VAL(copyString(name, (int) strlen(name))));
 	push(OBJ_VAL(newNativeFn(function, name, arity)));
@@ -69,9 +94,13 @@ static void defineObjectType(const char* name, ObjectType object, ObjNativeFn* f
 	pop();
 }
 
+#pragma endregion
+
+#pragma region Helpers
+
 static void concatenate() {
-	ObjString* b = AS_STRING(pop());
-	ObjString* a = AS_STRING(pop());
+	ObjString* b = AS_STRING(peek(0));
+	ObjString* a = AS_STRING(peek(1));
 
 	int length = a->length + b->length;
 	char* chars = ALLOCATE(char, length + 1);
@@ -80,6 +109,8 @@ static void concatenate() {
 	chars[length] = '\0';
 
 	ObjString* result = takeString(chars, length);
+	pop();
+	pop();
 	push(OBJ_VAL(result));
 }
 
@@ -270,29 +301,6 @@ static bool callValue(Value callee, byte argCount) {
 	return false;
 }
 
-void runtimeError(const char* format, ...) {
-	va_list args;
-	va_start(args, format);
-	rte(format, args);
-	va_end(args);
-	fputs("\n", stderr);
-
-	for (int i = vm.frameCount - 1; i >= 0; --i) {
-		CallFrame* frame = &vm.frames[i];
-		ObjFunction* function = frame->closure->function;
-		size_t instruction = frame->ip - function->chunk.code - 1;
-
-		int line = getLine(&function->chunk, instruction);
-		fprintf(stderr, "[line %d] in ", line);
-		if (function->name == NULL)
-			fprintf(stderr, "script\n");
-		else
-			fprintf(stderr, "%s()\n", function->name->chars);
-	}
-
-	resetStack();
-}
-
 static ObjUpvalue* captureUpvalue(Value* local) {
 	ObjUpvalue* prevUpvalue = NULL;
 	ObjUpvalue* upvalue = vm.openUpvalues;
@@ -327,9 +335,12 @@ static void closeUpvalues(Value* last) {
 	}
 }
 
+#pragma endregion
+
 static InterpretResult run() {
 	CallFrame* frame = &vm.frames[vm.frameCount - 1];
 
+#pragma region Useful Defines
 #define READ_BYTE() (*frame->ip++)
 #define READ_UINT16() ((uint16_t) (((uint16_t) READ_BYTE() << 8) | (uint16_t) READ_BYTE()))
 #define READ_UINT24() ((uint32_t) (((uint32_t) READ_UINT16() << 8) | (uint32_t) READ_BYTE()))
@@ -349,6 +360,7 @@ static InterpretResult run() {
 		push(valueType(a op b));                                                                \
 	} while (false)
 #define READ_STRING() AS_STRING(READ_CONSTANT())
+#pragma endregion
 
 	for (;;) {
 		byte instruction;
@@ -362,6 +374,10 @@ static InterpretResult run() {
 							   (int) (frame->ip - frame->closure->function->chunk.code));
 #endif
 		switch (instruction = READ_BYTE()) {
+			case OP_POP:
+				pop();
+				break;
+#pragma region Constants
 			case OP_CONSTANT_8:
 				constant = READ_CONSTANT();
 				push(constant);
@@ -379,6 +395,8 @@ static InterpretResult run() {
 			case OP_NULL:
 				push(NULL_VAL);
 				break;
+#pragma endregion
+#pragma region Basic Operations (!, +, -, *, /, %, ==, >, <, is)
 			case OP_NEGATE:
 				if (!IS_NUMBER(peek(0))) {
 					Value p = peek(0);
@@ -445,6 +463,8 @@ static InterpretResult run() {
 					push(BOOL_VAL(typesEqual(seafoxType(value), type)));
 					break;
 				}
+#pragma endregion
+#pragma region Array Operations (array literal, subscripting, iterators)
 			case OP_ARRAY:
 				if (!array())
 					return INTERPRET_RUNTIME_ERROR;
@@ -470,12 +490,11 @@ static InterpretResult run() {
 				}
 				push(*iter->pointer);
 				break;
+#pragma endregion
 			case OP_PRINT:
 				printValue(pop(), "\n");
 				break;
-			case OP_POP:
-				pop();
-				break;
+#pragma region Globals
 			case OP_DEFINE_GLOBAL:
 				{
 					ObjString* name = READ_STRING();
@@ -510,6 +529,8 @@ static InterpretResult run() {
 					push(top);
 					break;
 				}
+#pragma endregion
+#pragma region Upvalues
 			case OP_CLOSE_UPVALUE:
 				{
 					closeUpvalues(vm.stackTop - 1);
@@ -528,6 +549,8 @@ static InterpretResult run() {
 					*frame->closure->upvalues[slot]->location = peek(0);
 					break;
 				}
+#pragma endregion
+#pragma region Locals
 			case OP_GET_LOCAL:
 				{
 					byte slot = READ_BYTE();
@@ -540,6 +563,8 @@ static InterpretResult run() {
 					frame->slots[slot] = peek(0);
 					break;
 				}
+#pragma endregion
+#pragma region Control Flow
 			case OP_JUMP_IF_TRUE:
 				{
 					uint16_t jump = READ_UINT16();
@@ -579,6 +604,8 @@ static InterpretResult run() {
 					}
 					break;
 				}
+#pragma endregion
+#pragma region Functions
 			case OP_CALL:
 				{
 					int argCount = READ_BYTE();
@@ -621,12 +648,14 @@ static InterpretResult run() {
 					frame = &vm.frames[vm.frameCount - 1];
 					break;
 				}
+#pragma endregion
 
 			default:
 				return INTERPRET_RUNTIME_ERROR;
 		}
 	}
 
+#pragma region Defines Cleanup
 #undef READ_BYTE
 #undef READ_UINT16
 #undef READ_UINT24
@@ -635,6 +664,7 @@ static InterpretResult run() {
 #undef READ_CONSTANT_LONG
 #undef BINARY_OP
 #undef READ_STRING
+#pragma endregion
 }
 
 static void dumpChunk(Chunk* chunk, char* bytecodePath, char* tracePath) {
@@ -648,6 +678,14 @@ void initVM() {
 	initTable(&vm.strings);
 	initTable(&vm.globals);
 
+	vm.grayCount = 0;
+	vm.grayCapacity = 0;
+	vm.grayStack = NULL;
+
+	vm.bytesAllocated = 0;
+	vm.nextGC = 1024 * 1024; // 1 MB
+
+#pragma region Builtins
 	defineNative("getTime", getTimeNative, 0);
 	defineNative("write", writeNative, -1);
 	defineNative("writeln", writelnNative, -1);
@@ -670,12 +708,14 @@ void initVM() {
 	defineObjectType("Function", OBJ_FUNCTION, NULL);
 	defineObjectType("Type", OBJ_SEAFOX_TYPE, makeType);
 	defineObjectType("Iterator", OBJ_ITERATOR, iterator);
+#pragma endregion
 }
 
 void freeVM() {
 	freeTable(&vm.strings);
 	freeTable(&vm.globals);
 	freeObjects();
+	free(vm.grayStack);
 }
 
 InterpretResult interpret(const char* source, char* bytecodePath, const char* tracePath) {
@@ -685,7 +725,6 @@ InterpretResult interpret(const char* source, char* bytecodePath, const char* tr
 
 	dumpChunk(&function->chunk, bytecodePath, tracePath);
 
-	push(OBJ_VAL(function));
 	ObjClosure* closure = newClosure(function);
 	pop();
 	push(OBJ_VAL(closure));

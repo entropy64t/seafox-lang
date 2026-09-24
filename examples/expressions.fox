@@ -1,0 +1,4 @@
+writeln(1 + 2 * 3);
+writeln("Cats " + "and" + " dogs.");
+writeln([3, "Cats"]);
+writeln(!null or false);

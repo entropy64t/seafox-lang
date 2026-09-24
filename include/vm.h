@@ -37,6 +37,13 @@ typedef struct VM
 
 	HashTable strings;
 	HashTable globals;
+
+	int grayCount;
+	int grayCapacity;
+	Object** grayStack;
+
+	size_t bytesAllocated;
+	size_t nextGC;
 } VM;
 
 extern VM vm;

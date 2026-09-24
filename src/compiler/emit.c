@@ -1,4 +1,5 @@
 #include "compiler_internal.h"
+#include "vm.h"
 
 // write byte `b` to the active chunk
 void emitByte(byte b) {
@@ -41,6 +42,7 @@ int makeConstant(Value value) {
 
 // emit a constant
 int emitConstant(Value value) {
+	push(value);
 	int res = makeConstant(value);
 	Opcode opcode = OPCODE(res);
 	int constant = CONSTANT(res);
@@ -52,12 +54,14 @@ int emitConstant(Value value) {
 		printf("c24 for value: ");
 		printValue(value, "\n");
 		error("Support for more than 255 constants removed.");
+		pop();
 		return -1;
 		emitByte(opcode);
 		emitByte((byte) (constant >> 16) & BYTE_MAX);
 		emitByte((byte) (constant >> 8) & BYTE_MAX);
 		emitByte((byte) (constant >> 0) & BYTE_MAX);
 	}
+	pop();
 	return constant;
 }
 
