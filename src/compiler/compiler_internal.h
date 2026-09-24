@@ -12,9 +12,7 @@
 #include "object.h"
 #include "hashtable.h"
 
-#ifdef DEBUG_PRINT_CODE
 #include "debug.h"
-#endif
 
 typedef void (*ParseFn)(bool canAssign);
 
