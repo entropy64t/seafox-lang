@@ -2,7 +2,9 @@
 
 #include "object.h"
 #include "vm.h"
+#include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <time.h>
 
 #define TYPE_ERROR(fn, expected, at) runtimeError(fn "(): argument " #at ": expected " expected ", got %T", &args[at - 1]);
@@ -134,9 +136,20 @@ bool makeTypeNative(int argCount, Value* args, Value* out) {
 }
 
 bool stringNative(int argCount, Value* args, Value* out) {
-	char* chars;
-	*out = OBJ_VAL(copyString(chars, strlen(chars)));
-	return true;
+	if (IS_STRING(args[0])) {
+		*out = args[0];
+		return true;
+	}
+	if (IS_NUMBER(args[0])) {
+		char chars[32];
+		snprintf(chars, sizeof(chars), "%.15g", AS_NUMBER(args[0]));
+		*out = OBJ_VAL(copyString(chars, strlen(chars)));
+		return true;
+	}
+
+	*out = NULL_VAL;
+	TYPE_ERROR("string", "Number or String", 1);
+	return false;
 }
 
 bool iteratorNative(int argCount, Value* args, Value* out) {
@@ -191,5 +204,15 @@ bool isEndNative(int argCount, Value* args, Value* out) {
 	}
 	ObjIterator* it = AS_ITERATOR(args[0]);
 	*out = BOOL_VAL(it->pointer - it->container->items == it->container->length);
+	return true;
+}
+
+bool floorNative(int argCount, Value* args, Value* out) {
+	if (!IS_NUMBER(args[0])) {
+		*out = NULL_VAL;
+		TYPE_ERROR("floor", "Number", 1);
+		return false;
+	}
+	*out = NUMBER_VAL((long) AS_NUMBER(args[0]));
 	return true;
 }

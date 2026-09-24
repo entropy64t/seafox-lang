@@ -30,3 +30,5 @@ NATIVE(iterator);
 NATIVE(next);
 
 NATIVE(isEnd);
+
+NATIVE(floor);

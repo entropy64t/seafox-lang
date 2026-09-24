@@ -431,8 +431,8 @@ static InterpretResult run() {
 					}
 					double b = AS_NUMBER(pop());
 					double a = AS_NUMBER(pop());
-					int ai = (int) a;
-					int bi = (int) b;
+					long ai = (long) a;
+					long bi = (long) b;
 					if ((double) ai != a || (double) bi != b) {
 						runtimeError("Both operands must be integers.");
 					}
@@ -699,6 +699,7 @@ void initVM() {
 	ObjNativeFn* iterator = defineNative("begin", iteratorNative, 1);
 	defineNative("next", nextNative, 1);
 	defineNative("isEnd", isEndNative, 1);
+	defineNative("floor", floorNative, 1);
 
 	defineValueType("Number", VAL_NUMBER, number);
 	defineValueType("Bool", VAL_BOOL, NULL);
