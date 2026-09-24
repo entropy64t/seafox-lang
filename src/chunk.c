@@ -4,6 +4,7 @@
 #include "chunk.h"
 #include "fox_memory.h"
 #include "debug.h"
+#include "vm.h"
 
 void initChunk(Chunk* chunk) {
 	chunk->capacity = 0;
