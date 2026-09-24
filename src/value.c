@@ -69,8 +69,8 @@ static bool objectsEqual(Object* a, Object* b) {
 			}
 		case OBJ_ARRAY:
 			{
-				ObjArray* aArr = a;
-				ObjArray* bArr = b;
+				ObjArray* aArr = (ObjArray*) a;
+				ObjArray* bArr = (ObjArray*) b;
 				if (aArr->length != bArr->length)
 					return false;
 				for (int i = 0; i < aArr->length; i++) {
@@ -79,7 +79,10 @@ static bool objectsEqual(Object* a, Object* b) {
 				}
 				return true;
 			}
+		case OBJ_SEAFOX_TYPE:
+			return typesEqual(OBJ_VAL(a), OBJ_VAL(b));
 	}
+	return false;
 }
 
 bool valuesEqual(Value a, Value b) {

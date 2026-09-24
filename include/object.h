@@ -127,7 +127,7 @@ ObjUpvalue* newUpvalue(Value* slot);
 ObjClosure* newClosure(ObjFunction* function);
 ObjSeafoxType* newType(char* name, ValueType value, ObjectType obj);
 ObjIterator* makeIterator(ObjArray* container);
-ObjIterator* incrementIterator(ObjIterator* source);
+bool typesEqual(Value a, Value b);
 Value seafoxType(Value value);
 void fprintObject(FILE* file, Value value);
 void printObject(Value value);
