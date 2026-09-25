@@ -2,6 +2,7 @@
 #include <stdarg.h>
 #include <string.h>
 #include <stdlib.h>
+#include <math.h>
 
 #include "common.h"
 #include "vm.h"
@@ -432,12 +433,7 @@ static InterpretResult run() {
 					}
 					double b = AS_NUMBER(pop());
 					double a = AS_NUMBER(pop());
-					long ai = (long) a;
-					long bi = (long) b;
-					if ((double) ai != a || (double) bi != b) {
-						runtimeError("Both operands must be integers.");
-					}
-					push(NUMBER_VAL(ai % bi));
+					push(NUMBER_VAL(fmod(a, b)));
 					break;
 				}
 			case OP_EQUAL:
