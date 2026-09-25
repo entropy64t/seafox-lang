@@ -155,6 +155,12 @@ int disassembleInstruction(FILE* out, Chunk* chunk, int offset) {
 			return byteInstruction(out, "GET_UPVALUE", chunk, offset);
 		case OP_SET_UPVALUE:
 			return byteInstruction(out, "SET_UPVALUE", chunk, offset);
+		case OP_CLASS:
+			return constantInstruction(out, "CLASS", chunk, offset, 1);
+		case OP_GET_PROPERTY:
+			return constantInstruction(out, "GET_PROPERTY", chunk, offset, 1);
+		case OP_SET_PROPERTY:
+			return constantInstruction(out, "SET_PROPERTY", chunk, offset, 1);
 		default:
 			fprintf(out, "Unknown opcode %u\n", instruction);
 			return offset + 1;

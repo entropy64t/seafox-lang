@@ -153,6 +153,9 @@ static Token number() {
 			advance();
 		}
 	}
+	else {
+		return makeToken(TOKEN_INTEGER);
+	}
 
 	return makeToken(TOKEN_NUMBER);
 }

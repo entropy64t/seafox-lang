@@ -10,6 +10,7 @@
 const char* types[VALUE_TYPE_COUNT] = {
 	[VAL_BOOL] = "Bool",
 	[VAL_NUMBER] = "Number",
+	[VAL_INTEGER] = "Integer",
 	[VAL_NULL] = "Null",
 	[VAL_OBJECT] = "Object"};
 
@@ -41,7 +42,7 @@ static Object* allocateObject(size_t size, ObjectType type) {
 
 #define ALLOCATE_OBJ(type, objectType) (type*) allocateObject(sizeof(type), objectType)
 
-static uint32_t hashString(const char* key, int length) {
+uint32_t hashString(const char* key, int length) {
 	uint32_t hash = 2166136261u; // 1st magic prime
 	for (int i = 0; i < length; i++) {
 		hash ^= (uint8_t) key[i];
@@ -147,11 +148,16 @@ ObjClosure* newClosure(ObjFunction* function) {
 	return closure;
 }
 
-ObjSeafoxType* newType(char* name, ValueType value, ObjectType object) {
+ObjSeafoxType* newType(char* name, ValueType value, ObjectType object, ObjClass* clas) {
 	ObjSeafoxType* type = ALLOCATE_OBJ(ObjSeafoxType, OBJ_SEAFOX_TYPE);
 	type->value = value;
 	type->object = object;
+	type->name = NULL;
+	type->function = NULL;
+	type->clas = clas;
+	push(OBJ_VAL(type));
 	type->name = copyString(name, (int) strlen(name));
+	pop();
 	return type;
 }
 
@@ -161,27 +167,42 @@ Value seafoxType(Value value) {
 	if (IS_OBJECT(value)) {
 		objType = OBJ_TYPE(value);
 	}
+
 	if (objType == OBJ_CLOSURE || objType == OBJ_NATIVE_FN)
 		objType = OBJ_FUNCTION;
+
 	if (objType == OBJ_UPVALUE) {
 		return seafoxType(*AS_UPVALUE(value)->location);
 	}
+
+	if (objType == OBJ_CLASS) {
+		ObjClass* clas = AS_CLASS(value);
+		return OBJ_VAL(newType(clas->name->chars, VAL_OBJECT, OBJ_CLASS, clas));
+	}
+
+	if (objType == OBJ_INSTANCE)
+		return seafoxType(OBJ_VAL(AS_INSTANCE(value)->clas));
+
 	char* name = types[valueType];
 	if (objType != OBJ_TYPE_COUNT)
 		name = objtypes[objType];
 
-	return OBJ_VAL(newType(name, valueType, objType));
+	return OBJ_VAL(newType(name, valueType, objType, NULL));
 	// TODO this is most of the time unnecesarily slow
 	// because for 'is' the type name does not matter
 }
 
 bool typesEqual(Value a, Value b) {
 	ObjSeafoxType* t1 = AS_SEAFOX_TYPE(a);
-	if (!IS_SEAFOX_TYPE(b) && IS_NULL(b)) {
-		return t1->value != VAL_NULL;
+	if (!IS_SEAFOX_TYPE(b)) {
+		if (IS_NULL(b))
+			return t1->value != VAL_NULL;
+
+		if (IS_CLASS(b))
+			return t1->clas == AS_CLASS(b);
 	}
 	ObjSeafoxType* t2 = AS_SEAFOX_TYPE(b);
-	return t1->value == t2->value && t1->object == t2->object;
+	return t1->value == t2->value && t1->object == t2->object && t1->clas == t2->clas;
 	// TODO should types check their names?
 }
 
@@ -224,11 +245,16 @@ void fprintObject(FILE* file, Value value) {
 			fprintf(file, "<native function %s>", AS_NATIVE(value)->name);
 			break;
 		case OBJ_SEAFOX_TYPE:
-			ObjString* name = AS_SEAFOX_TYPE(value)->name;
-			fprintf(file, "<type %.*s>", name->length, name->chars);
+			fprintf(file, "<type %s>", AS_SEAFOX_TYPE(value)->name->chars);
 			break;
 		case OBJ_ITERATOR:
 			fprintf(file, "<iterator>");
+		case OBJ_CLASS:
+			fprintf(file, "<class %s>", AS_CLASS(value)->name->chars);
+			break;
+		case OBJ_INSTANCE:
+			// TODO when we have ethods check for a string() method and print the result
+			fprintf(file, "<instance of %s>", AS_INSTANCE(value)->clas->name->chars);
 			break;
 	}
 }
@@ -250,4 +276,17 @@ ObjIterator* makeIterator(ObjArray* container) {
 	iter->pointer = container->items;
 	iter->container = container;
 	return iter;
+}
+
+ObjClass* newClass(ObjString* name) {
+	ObjClass* clas = ALLOCATE_OBJ(ObjClass, OBJ_CLASS);
+	clas->name = name;
+	return clas;
+}
+
+ObjInstance* newInstance(ObjClass* clas) {
+	ObjInstance* instance = ALLOCATE_OBJ(ObjInstance, OBJ_INSTANCE);
+	instance->clas = clas;
+	initTable(&instance->fields);
+	return instance;
 }

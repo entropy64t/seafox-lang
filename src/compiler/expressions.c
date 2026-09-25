@@ -54,6 +54,13 @@ static void number(bool canAssign) {
 	debugUnlog();
 }
 
+static void integer(bool canAssign) {
+	debugLog("integer()");
+	double value = strtoll(parser.previous.start, NULL, 10);
+	emitConstant(INT_VAL(value));
+	debugUnlog();
+}
+
 // string literal
 static void string(bool canAssign) {
 	debugLog("string()");
@@ -292,6 +299,20 @@ static void ternary(bool canAssign) {
 	emitByte(OP_CONDITIONAL);
 }
 
+static void dot(bool canAssign) {
+	consume(TOKEN_IDENTIFIER, "Expected property name after '.'.");
+
+	byte name = identifierConstant(&parser.previous);
+
+	if (canAssign && match(TOKEN_EQUAL)) {
+		expression();
+		emitBytes(OP_SET_PROPERTY, name);
+	}
+	else {
+		emitBytes(OP_GET_PROPERTY, name);
+	}
+}
+
 // pratt table : BEGIN
 ParseRule rules[] = {
 	[TOKEN_LEFT_PAREN] = {grouping, call, NULL, PREC_CALL},
@@ -299,7 +320,7 @@ ParseRule rules[] = {
 	[TOKEN_LEFT_BRACE] = {NULL, NULL, NULL, PREC_NONE},
 	[TOKEN_RIGHT_BRACE] = {NULL, NULL, NULL, PREC_NONE},
 	[TOKEN_COMMA] = {NULL, NULL, NULL, PREC_NONE},
-	[TOKEN_DOT] = {NULL, NULL, NULL, PREC_NONE},
+	[TOKEN_DOT] = {NULL, dot, NULL, PREC_CALL},
 	[TOKEN_MINUS] = {unary, binary, NULL, PREC_TERM},
 	[TOKEN_PLUS] = {NULL, binary, NULL, PREC_TERM},
 	[TOKEN_PLUS_PLUS] = {NULL, NULL, NULL, PREC_NONE},
@@ -325,6 +346,7 @@ ParseRule rules[] = {
 	[TOKEN_RIGHT_BRACKET] = {NULL, NULL, NULL, PREC_NONE},
 	[TOKEN_IDENTIFIER] = {variable, NULL, NULL, PREC_NONE},
 	[TOKEN_STRING] = {string, NULL, NULL, PREC_NONE},
+	[TOKEN_INTEGER] = {integer, NULL, NULL, PREC_NONE},
 	[TOKEN_NUMBER] = {number, NULL, NULL, PREC_NONE},
 	[TOKEN_AND] = {NULL, logicAnd, NULL, PREC_AND},
 	[TOKEN_CLASS] = {NULL, NULL, NULL, PREC_NONE},

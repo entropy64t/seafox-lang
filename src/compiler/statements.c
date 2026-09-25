@@ -160,6 +160,19 @@ static void functionDeclaration() {
 	defineVariable(global);
 }
 
+static void classDeclaration() {
+	consume(TOKEN_IDENTIFIER, "Expected class name.");
+
+	byte nameConstant = identifierConstant(&parser.previous);
+	declareVariable();
+
+	emitBytes(OP_CLASS, nameConstant);
+	defineVariable(nameConstant);
+
+	consume(TOKEN_LEFT_BRACE, "Expected '{' before class body.");
+	consume(TOKEN_RIGHT_BRACE, "Expected '}' after class body.");
+}
+
 static void returnStatement() {
 	if (current->type == TYPE_SCRIPT) {
 		error("Return statement in top-level code");
@@ -211,7 +224,10 @@ void block() {
 }
 
 void declaration() {
-	if (match(TOKEN_FUNCTION)) {
+	if (match(TOKEN_CLASS)) {
+		classDeclaration();
+	}
+	else if (match(TOKEN_FUNCTION)) {
 		functionDeclaration();
 	}
 	else if (match(TOKEN_VAR) || match(TOKEN_CONST)) {

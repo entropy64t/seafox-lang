@@ -19,6 +19,12 @@
 // Log all of GC's actions
 // #define DEBUG_LOG_GC
 
+// Warn when print statement is used
+// #define WARN_ON_PRINT
+
+// Do not use print statement
+// #define DONT_USE_PRINT
+
 #pragma endregion
 
 #define LOCALS_COUNT (UINT8_MAX + 1) // 1 byte should be enough (256)

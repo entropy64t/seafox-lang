@@ -40,6 +40,10 @@ int makeConstant(Value value) {
 	return data;
 }
 
+byte identifierConstant(Token* name) {
+	return makeConstant(OBJ_VAL(copyString(name->start, name->length)));
+}
+
 // emit a constant
 int emitConstant(Value value) {
 	push(value);

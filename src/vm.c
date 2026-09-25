@@ -80,7 +80,7 @@ static ObjNativeFn* defineNative(const char* name, NativeFn function, int arity)
 
 static void defineValueType(const char* name, ValueType value, ObjNativeFn* function) {
 	push(OBJ_VAL(copyString(name, (int) strlen(name))));
-	push(OBJ_VAL(newType(name, value, OBJ_TYPE_COUNT)));
+	push(OBJ_VAL(newType(name, value, OBJ_TYPE_COUNT, NULL)));
 	AS_SEAFOX_TYPE(vm.stack[1])->function = function;
 	tableSet(&vm.globals, AS_STRING(vm.stack[0]), vm.stack[1]);
 	pop();
@@ -89,7 +89,7 @@ static void defineValueType(const char* name, ValueType value, ObjNativeFn* func
 
 static void defineObjectType(const char* name, ObjectType object, ObjNativeFn* function) {
 	push(OBJ_VAL(copyString(name, (int) strlen(name))));
-	push(OBJ_VAL(newType(name, VAL_OBJECT, object)));
+	push(OBJ_VAL(newType(name, VAL_OBJECT, object, NULL)));
 	AS_SEAFOX_TYPE(vm.stack[1])->function = function;
 	tableSet(&vm.globals, AS_STRING(vm.stack[0]), vm.stack[1]);
 	pop();
@@ -198,17 +198,13 @@ static bool indexArray(ObjArray* arr, int index) {
 }
 
 static bool indexGet() {
-	Value index = pop();
-	if (!IS_NUMBER(index)) {
-		runtimeError("Expresion must be a number, not %T", &index);
+	Value value = pop();
+	if (!IS_INT(value)) {
+		runtimeError("Indices must be integers, not %T", &value);
 		return false;
 	}
 
-	int intValue = AS_NUMBER(index);
-	if (intValue != AS_NUMBER(index)) {
-		runtimeError("Indices must be integers.");
-		return false;
-	}
+	long long index = AS_INT(value);
 
 	Value array = pop();
 	if (!IS_OBJECT(array)) {
@@ -218,9 +214,9 @@ static bool indexGet() {
 
 	switch (AS_OBJECT(array)->type) {
 		case OBJ_STRING:
-			return indexString(AS_STRING(array), intValue);
+			return indexString(AS_STRING(array), index);
 		case OBJ_ARRAY:
-			return indexArray(AS_ARRAY(array), intValue);
+			return indexArray(AS_ARRAY(array), index);
 		default:
 			runtimeError("Can only index arrays or strings, not %T", &array);
 			return false;
@@ -230,20 +226,16 @@ static bool indexGet() {
 
 static bool indexSet() {
 	Value target = pop();
-	if (!IS_NUMBER(peek(0))) {
-		runtimeError("Array indices must be numbers");
+	if (!IS_INT(peek(0))) {
+		runtimeError("Array indices must be integers");
 		return false;
 	}
 	if (!IS_ARRAY(peek(1))) {
 		runtimeError("Can only assign to array indices");
 		return false;
 	}
-	double d = AS_NUMBER(pop());
-	int index = d;
-	if (d != index) {
-		runtimeError("Array indices must be integers");
-		return false;
-	}
+	long long index = AS_INT(pop());
+
 	ObjArray* array = AS_ARRAY(peek(0));
 	if (index >= array->length) {
 		runtimeError("Out of array range. Index: %d, length: %d", index, array->length);
@@ -279,27 +271,52 @@ static bool callValue(Value callee, byte argCount) {
 			case OBJ_CLOSURE:
 				return call(AS_CLOSURE(callee), argCount);
 			case OBJ_NATIVE_FN:
-				ObjNativeFn* native = AS_NATIVE(callee);
-				if (native->arity != -1 && argCount != native->arity) {
-					runtimeError("Native function %s expected %d arguments, got %d", native->name, native->arity, argCount);
-					return false;
+				{
+					ObjNativeFn* native = AS_NATIVE(callee);
+					if (native->arity != -1 && argCount != native->arity) {
+						runtimeError("Native function %s expected %d arguments, got %d", native->name, native->arity, argCount);
+						return false;
+					}
+					NativeFn function = native->function;
+					Value result;
+					bool ok = function(argCount, vm.stackTop - argCount, &result);
+					if (!ok)
+						return false;
+					vm.stackTop -= argCount + 1;
+					push(result);
+					return true;
 				}
-				NativeFn function = native->function;
-				Value result;
-				bool ok = function(argCount, vm.stackTop - argCount, &result);
-				if (!ok)
-					return false;
-				vm.stackTop -= argCount + 1;
-				push(result);
-				return true;
 			case OBJ_SEAFOX_TYPE:
 				return callValue(OBJ_VAL(AS_SEAFOX_TYPE(callee)->function), argCount);
+			case OBJ_CLASS:
+				{
+					ObjClass* clas = AS_CLASS(callee);
+					vm.stackTop[-argCount - 1] = OBJ_VAL(newInstance(clas));
+					return true;
+				}
 
 			default:
 				break;
 		}
 	}
 	runtimeError("Can only call a function, not %T", &callee);
+	return false;
+}
+
+static bool nativeProperty(Value value, ObjString* name) {
+	if (!IS_OBJECT(value))
+		return false;
+
+	switch (AS_OBJECT(value)->type) {
+		case OBJ_ARRAY:
+			// TODO hash table when theres gonna be a lot of these
+			if (strcmp(name->chars, "length") == 0) {
+				pop();
+				push(NUMBER_VAL(AS_ARRAY(value)->length));
+				return true;
+			}
+			return true;
+	}
 	return false;
 }
 
@@ -425,15 +442,22 @@ static InterpretResult run() {
 				break;
 			case OP_MODULO:
 				{
-					if (!IS_NUMBER(peek(0)) || !IS_NUMBER(peek(1))) {
+					if (IS_INT(peek(0)) && IS_INT(peek(1))) {
+						long long b = AS_INT(pop());
+						long long a = AS_INT(pop());
+						push(INT_VAL(a % b));
+					}
+					else if (IS_NUMBER(peek(0)) && IS_NUMBER(peek(1))) {
+						double b = AS_NUMBER(pop());
+						double a = AS_NUMBER(pop());
+						push(NUMBER_VAL(fmod(a, b)));
+					}
+					else {
 						Value v1 = peek(1);
 						Value v2 = peek(0);
 						runtimeError("Both operands must be numbers, not %T and %T.", &v1, &v2);
 						return INTERPRET_RUNTIME_ERROR;
 					}
-					double b = AS_NUMBER(pop());
-					double a = AS_NUMBER(pop());
-					push(NUMBER_VAL(fmod(a, b)));
 					break;
 				}
 			case OP_EQUAL:
@@ -453,7 +477,7 @@ static InterpretResult run() {
 				{
 					Value type = pop();
 					Value value = pop();
-					if (!IS_SEAFOX_TYPE(type) && !IS_NULL(type)) {
+					if (!IS_SEAFOX_TYPE(type) && !IS_NULL(type) && !IS_CLASS(type)) {
 						runtimeError("%T is not a type or null", &type);
 						return INTERPRET_RUNTIME_ERROR;
 					}
@@ -489,14 +513,18 @@ static InterpretResult run() {
 				break;
 #pragma endregion
 			case OP_PRINT:
+#ifndef DONT_USE_PRINT
+#ifdef WARN_ON_PRINT
+				fprintf(stderr, "Waring: use of print statement.\n");
+#endif
 				printValue(pop(), "\n");
+#endif
 				break;
 #pragma region Globals
 			case OP_DEFINE_GLOBAL:
 				{
 					ObjString* name = READ_STRING();
 					tableSet(&vm.globals, name, peek(0));
-					pop();
 					pop();
 					break;
 				}
@@ -508,7 +536,6 @@ static InterpretResult run() {
 						runtimeError("Undefined global variable: '%s'.", name->chars);
 						return INTERPRET_RUNTIME_ERROR;
 					}
-					pop();
 					push(var);
 					break;
 				}
@@ -521,7 +548,6 @@ static InterpretResult run() {
 						runtimeError("Undefined global variable: '%s'.", name->chars);
 						return INTERPRET_RUNTIME_ERROR;
 					}
-					pop();
 					pop();
 					push(top);
 					break;
@@ -643,6 +669,47 @@ static InterpretResult run() {
 					vm.stackTop = frame->slots;
 					push(result);
 					frame = &vm.frames[vm.frameCount - 1];
+					break;
+				}
+#pragma endregion
+#pragma region Classes
+			case OP_CLASS:
+				push(OBJ_VAL(newClass(READ_STRING())));
+				break;
+			case OP_GET_PROPERTY:
+				{
+					ObjString* name = READ_STRING();
+					if (nativeProperty(peek(0), name)) {
+						break;
+					}
+					if (!IS_INSTANCE(peek(0))) {
+						Value v = peek(0);
+						runtimeError("'%V' is not an instance.", &v);
+						return INTERPRET_RUNTIME_ERROR;
+					}
+					ObjInstance* instance = AS_INSTANCE(peek(0));
+
+					Value value;
+					if (tableGet(&instance->fields, name, &value)) {
+						pop();
+						push(value);
+						break;
+					}
+
+					runtimeError("Undefined property '%s'", name->chars);
+					return INTERPRET_RUNTIME_ERROR;
+				}
+			case OP_SET_PROPERTY:
+				{
+					if (!IS_INSTANCE(peek(1))) {
+						Value v = peek(1);
+						runtimeError("'%V' is not an instance.", &v);
+					}
+					ObjInstance* instance = AS_INSTANCE(peek(1));
+					tableSet(&instance->fields, READ_STRING(), peek(0));
+					Value value = pop();
+					pop();
+					push(value);
 					break;
 				}
 #pragma endregion

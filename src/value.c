@@ -40,11 +40,14 @@ void fprintValue(FILE* file, Value value, const char* end) {
 			// snprintf
 			fprintf(file, "%.15g", AS_NUMBER(value));
 			break;
+		case VAL_INTEGER:
+			fprintf(file, "%Ld", AS_INT(value));
+			break;
 		case VAL_OBJECT:
 			fprintObject(file, value);
 			break;
 		default:
-			fprintf(file, "error-type");
+			fprintf(file, "<error-type>");
 			break;
 	}
 
@@ -53,9 +56,6 @@ void fprintValue(FILE* file, Value value, const char* end) {
 
 void printValue(Value value, const char* end) {
 	fprintValue(stdout, value, end);
-}
-
-void getCString(Value value, char* buffer) {
 }
 
 static bool objectsEqual(Object* a, Object* b) {
@@ -95,6 +95,8 @@ bool valuesEqual(Value a, Value b) {
 			return true;
 		case VAL_NUMBER:
 			return AS_NUMBER(a) == AS_NUMBER(b);
+		case VAL_INTEGER:
+			return AS_INT(a) == AS_INT(b);
 		case VAL_OBJECT:
 			{
 				Object* objA = AS_OBJECT(a);

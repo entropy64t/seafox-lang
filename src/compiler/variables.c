@@ -1,11 +1,6 @@
 #include "compiler_internal.h"
 #include "vm.h"
 
-// emit a variable's name, return its location
-static byte identifierConstant(Token* name) {
-	return emitConstant(OBJ_VAL(copyString(name->start, name->length)));
-}
-
 static bool identifiersEqual(Token* a, Token* b) {
 	if (a->length != b->length)
 		return false;
@@ -44,7 +39,7 @@ static void addLocal(Token name) {
 }
 
 // declare local variable from the value at the top of the stack
-static void declareVariable() {
+void declareVariable() {
 	if (current->scopeDepth == 0)
 		return;
 

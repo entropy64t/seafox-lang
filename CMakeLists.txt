@@ -16,6 +16,11 @@ file(GLOB_RECURSE SRC_FILES
 
 add_executable(seafox ${SRC_FILES})
 
+target_link_libraries(seafox
+    PRIVATE
+        m
+)
+
 target_include_directories(seafox
     PRIVATE
         ${PROJECT_SOURCE_DIR}/include

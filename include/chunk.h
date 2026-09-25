@@ -59,6 +59,10 @@ typedef enum Opcode
 	OP_CALL,
 	OP_CLOSURE,
 	OP_RETURN,
+
+	OP_CLASS,
+	OP_SET_PROPERTY,
+	OP_GET_PROPERTY
 } Opcode;
 
 typedef struct Chunk

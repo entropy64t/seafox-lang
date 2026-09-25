@@ -148,6 +148,8 @@ int makeConstant(Value value);
 // emit a constant
 int emitConstant(Value value);
 
+byte identifierConstant(Token* name);
+
 void emitReturn();
 
 // emit op to create an array
@@ -167,6 +169,8 @@ void emitLoop(int offset);
 byte parseVariable(bool isConst, const char* errorMessage);
 
 void initializeLocal();
+
+void declareVariable();
 
 // define a global variable
 // `global` - where in the constants array is the variable's name

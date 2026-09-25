@@ -10,6 +10,7 @@ typedef struct ObjArray ObjArray;
 typedef enum ValueType
 {
 	VAL_NUMBER,
+	VAL_INTEGER,
 	VAL_BOOL,
 	VAL_NULL,
 	VAL_OBJECT,
@@ -23,6 +24,7 @@ typedef struct Value
 	{
 		bool boolean;
 		double number;
+		long long integer;
 		Object* object;
 	} as;
 } Value;
@@ -31,15 +33,18 @@ typedef struct Value
 #define NULL_VAL ((Value) {VAL_NULL, {.number = 0}})
 #define NUMBER_VAL(value) ((Value) {VAL_NUMBER, {.number = (value)}})
 #define OBJ_VAL(value) ((Value) {VAL_OBJECT, {.object = (Object*) value}})
+#define INT_VAL(value) ((Value) {VAL_INTEGER, {.integer = (value)}})
 
 #define AS_BOOL(value) ((value).as.boolean)
 #define AS_NUMBER(value) ((value).as.number)
 #define AS_OBJECT(value) ((value).as.object)
+#define AS_INT(value) ((value).as.integer)
 
 #define IS_BOOL(value) ((value).type == VAL_BOOL)
 #define IS_NULL(value) ((value).type == VAL_NULL)
 #define IS_NUMBER(value) ((value).type == VAL_NUMBER)
 #define IS_OBJECT(value) ((value).type == VAL_OBJECT)
+#define IS_INT(value) ((value).type == VAL_INTEGER)
 
 typedef struct ValueArray
 {

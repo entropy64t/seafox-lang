@@ -60,6 +60,18 @@ static void freeObject(Object* object) {
 				FREE(ObjSeafoxType, object);
 				break;
 			}
+		case OBJ_CLASS:
+			{
+				FREE(ObjClass, object);
+				break;
+			}
+		case OBJ_INSTANCE:
+			{
+				ObjInstance* instance = (ObjInstance*) object;
+				freeTable(&instance->fields);
+				FREE(ObjInstance, object);
+				break;
+			}
 	}
 }
 
@@ -128,6 +140,19 @@ static void blackenObject(Object* object) {
 		case OBJ_ITERATOR:
 			markObject((Object*) ((ObjIterator*) object)->container);
 			break;
+		case OBJ_CLASS:
+			{
+				ObjClass* clas = (ObjClass*) object;
+				markObject((Object*) clas->name);
+				break;
+			}
+		case OBJ_INSTANCE:
+			{
+				ObjInstance* instance = (ObjInstance*) object;
+				markObject((Object*) instance->clas);
+				markTable(&instance->fields);
+				break;
+			}
 		case OBJ_NATIVE_FN:
 		case OBJ_STRING:
 			break;

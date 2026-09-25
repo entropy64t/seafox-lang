@@ -45,6 +45,7 @@ typedef enum TokenType
 	TOKEN_IDENTIFIER,
 	TOKEN_STRING,
 	TOKEN_NUMBER,
+	TOKEN_INTEGER,
 
 	// Keywords.
 	TOKEN_AND,

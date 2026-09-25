@@ -156,7 +156,7 @@ int rte(const char* fmt, va_list args) {
 				{
 					/* Custom enum printer */
 					Value* v = va_arg(args, Value*);
-					printValue(*v, "\n");
+					fprintValue(stderr, *v, "");
 					break;
 				}
 

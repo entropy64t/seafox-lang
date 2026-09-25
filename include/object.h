@@ -3,6 +3,7 @@
 #include "common.h"
 #include "value.h"
 #include "chunk.h"
+#include "hashtable.h"
 
 typedef enum ObjectType
 {
@@ -14,6 +15,8 @@ typedef enum ObjectType
 	OBJ_UPVALUE,
 	OBJ_SEAFOX_TYPE,
 	OBJ_ITERATOR,
+	OBJ_CLASS,
+	OBJ_INSTANCE,
 	OBJ_TYPE_COUNT
 } ObjectType;
 
@@ -74,21 +77,35 @@ typedef struct ObjClosure
 	int upvalueCount;
 } ObjClosure;
 
-typedef struct ObjSeafoxType
-{
-	Object obj;
-	ValueType value;
-	ObjectType object;
-	ObjString* name;
-	ObjNativeFn* function; // this gets called when doing Type()
-} ObjSeafoxType;
-
 typedef struct ObjIterator
 {
 	Object obj;
 	Value* pointer;
 	ObjArray* container;
 } ObjIterator;
+
+typedef struct ObjClass
+{
+	Object obj;
+	ObjString* name;
+} ObjClass;
+
+typedef struct ObjInstance
+{
+	Object obj;
+	ObjClass* clas;
+	HashTable fields;
+} ObjInstance;
+
+typedef struct ObjSeafoxType
+{
+	Object obj;
+	ValueType value;
+	ObjectType object;
+	ObjClass* clas;
+	ObjString* name;
+	ObjNativeFn* function; // this gets called when doing Type()
+} ObjSeafoxType;
 
 extern const char* types[VALUE_TYPE_COUNT];
 extern const char* objtypes[OBJ_TYPE_COUNT];
@@ -105,6 +122,8 @@ static inline bool isObjType(Value value, ObjectType type) {
 #define IS_CLOSURE(value) isObjType(value, OBJ_CLOSURE)
 #define IS_SEAFOX_TYPE(value) isObjType(value, OBJ_SEAFOX_TYPE)
 #define IS_ITERATOR(value) isObjType(value, OBJ_ITERATOR)
+#define IS_CLASS(value) isObjType(value, OBJ_CLASS)
+#define IS_INSTANCE(value) isObjType(value, OBJ_INSTANCE)
 
 #define AS_STRING(value) ((ObjString*) AS_OBJECT(value))
 #define AS_CSTRING(value) (((ObjString*) AS_OBJECT(value))->chars)
@@ -115,6 +134,8 @@ static inline bool isObjType(Value value, ObjectType type) {
 #define AS_CLOSURE(value) ((ObjClosure*) AS_OBJECT(value))
 #define AS_SEAFOX_TYPE(value) ((ObjSeafoxType*) AS_OBJECT(value))
 #define AS_ITERATOR(value) ((ObjIterator*) AS_OBJECT(value))
+#define AS_CLASS(value) ((ObjClass*) AS_OBJECT(value))
+#define AS_INSTANCE(value) ((ObjInstance*) AS_OBJECT(value))
 
 ObjString* copyString(char* chars, int length);
 ObjString* takeString(char* chars, int length);
@@ -125,9 +146,12 @@ ObjFunction* newFunction(void);
 ObjNativeFn* newNativeFn(NativeFn function, const char* name, int arity);
 ObjUpvalue* newUpvalue(Value* slot);
 ObjClosure* newClosure(ObjFunction* function);
-ObjSeafoxType* newType(char* name, ValueType value, ObjectType obj);
+ObjSeafoxType* newType(char* name, ValueType value, ObjectType obj, ObjClass* clas);
 ObjIterator* makeIterator(ObjArray* container);
+ObjClass* newClass(ObjString* name);
+ObjInstance* newInstance(ObjClass* klass);
 bool typesEqual(Value a, Value b);
 Value seafoxType(Value value);
 void fprintObject(FILE* file, Value value);
 void printObject(Value value);
+uint32_t hashString(const char* key, int length);
